@@ -1,5 +1,6 @@
 use rusagent::{
-    agent::planner::Planner, input::model::UserTaskInput, utils::string_util::StripCodeBlock,
+    agent::planner::Planner, input::model::UserTaskInput, models::plan::Plan,
+    utils::string_util::StripCodeBlock,
 };
 use serde_json::Value;
 
@@ -16,6 +17,6 @@ async fn main() {
     println!("{:?}", content);
     let c1 = content.strip_code_block();
 
-    let value: Value = serde_json::from_str(c1).unwrap();
+    let value: Plan = serde_json::from_str(c1).unwrap();
     println!("{:#?}", value);
 }

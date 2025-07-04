@@ -15,32 +15,37 @@ pub fn generate_planner_message(input: &UserTaskInput) -> Vec<ChatMessage> {
 fn generate_system_message() -> ChatMessage {
     let content = r#"
 You are a task planning assistant.
-Your only output should be valid JSON matching this structure:
+Your only output should be valid JSON matching this structure.
 
+Each field meaning:
+- plan_id: Unique ID for this plan
+- description: Plan description
+- steps: A list of steps
+- step_id: Step index (1-based)
+- description: Step description
+- action: What the step does (e.g., call_tool, ask_user)
+- tool: Name of tool to call, or null if no tool needed
+- parameters: Parameters for tool as JSON, or null
+- input: Input for the step as JSON, or null
+
+Output JSON example:
 {
+  "plan_id": "string",
+  "description": "string",
   "steps": [
     {
-      "need_tool": true,
-      "tool_name": "string",
+      "step_id": 1,
       "description": "string",
-      "params": [
-        {
-          "name": "string",
-          "type": "string",
-          "value": "string"
-        }
-      ]
-    },
-    {
-      "need_tool": false,
-      "description": "string",
-      "result": "string"
+      "action": "string",
+      "tool": "string or null",
+      "parameters": {} or null,
+      "input": {} or null,
     }
   ]
 }
 
-Never include any notes, explanations, or natural language. 
-Only output the JSON.
+Never include any notes, explanations, or natural language.
+Only output the JSON in the exact structure above.
 "#;
     ChatMessage::system(content)
 }
