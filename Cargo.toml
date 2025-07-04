@@ -11,9 +11,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 model-gateway-rs = { path = "/Users/ancient/src/rust/model-gateway-rs" }
-mcp-client = { package = "mcp-client-rust", version = "0.1.0" }
-mcp-transport = { package = "mcp-transport-rs", version = "0.1.0" }
+mcp-client = { package = "mcp-client-rust", path = "../mcp-rs/crates/mcp-client-rust" }
+
 
 [[example]]
 name = "flow"
 path = "example/flow.rs"
+
+[[example]]
+name = "tools"
+path = "example/tools.rs"

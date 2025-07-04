@@ -5,30 +5,36 @@ pub fn build_task_prompt(input: &UserTaskInput) -> String {
         .references
         .as_ref()
         .map(|refs| refs.join(", "))
-        .unwrap_or_else(|| "无".to_string());
+        .unwrap_or_else(|| "None".to_string());
+
+    let description = input.description.as_deref().unwrap_or("None");
+    let constraints = input.constraints.as_deref().unwrap_or("None");
 
     format!(
-        "你是一个任务规划助手，请基于以下信息生成任务计划。\n输出必须是严格符合以下结构的 \
-         JSON，不要输出除 JSON 外的其他内容：\n{{\n  \"steps\": [\n    {{ \"tool\": \"工具名称\", \
-         \"params\": {{...}} }}\n  ]\n}}\n\n任务目标: {}\n数据内容: {}\n背景信息: {}\n限制条件: \
-         {}\n参考资料: {}\n",
-        input.goal,
-        input.content,
-        input.description.as_deref().unwrap_or("无"),
-        input.constraints.as_deref().unwrap_or("无"),
-        references
+        r#"
+Please generate a task plan.
+
+Task Goal: {}
+Data Content: {}
+Background Information: {}
+Constraints: {}
+References: {}
+"#,
+        input.goal, input.content, description, constraints, references
     )
 }
 
 pub fn build_tools_prompt(tools: &[ToolInfo]) -> String {
-    tools
+    let tools_text = tools
         .iter()
         .map(|tool| {
             format!(
-                "- 工具名称: {}\n  功能: {}\n  参数格式: {}",
+                "\n - name: {}\n - description: {}\n - params_schema: {}",
                 tool.name, tool.description, tool.params_schema
             )
         })
         .collect::<Vec<_>>()
-        .join("\n")
+        .join("\n");
+
+    format!("Available tools:\n{}", tools_text)
 }

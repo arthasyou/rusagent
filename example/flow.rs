@@ -1,4 +1,7 @@
-use rusagent::{agent::planner::Planner, input::model::UserTaskInput};
+use rusagent::{
+    agent::planner::Planner, input::model::UserTaskInput, utils::string_util::StripCodeBlock,
+};
+use serde_json::Value;
 
 #[tokio::main]
 async fn main() {
@@ -8,25 +11,11 @@ async fn main() {
     let p = Planner::default();
 
     // 1️⃣ 调用 planner 生成任务计划
-    let plan = p.generate_plan(user_input).await.unwrap();
-    println!("🎯 生成的任务计划: {:?}", plan);
-    // match plan {
-    //     Ok(task_plan) => {
-    //         println!("🎯 生成的任务计划: {:?}", task_plan);
+    let plan = p.generate_plan(&user_input).await.unwrap();
+    let content = plan.first_message().unwrap();
+    println!("{:?}", content);
+    let c1 = content.strip_code_block();
 
-    //         // 2️⃣ 调用 executor 执行任务计划
-    //         let result = Executor::execute_plan(task_plan).await;
-    //         match result {
-    //             Ok(task_result) => {
-    //                 println!("✅ 执行结果: {:?}", task_result);
-    //             }
-    //             Err(e) => {
-    //                 eprintln!("❌ 执行任务失败: {}", e);
-    //             }
-    //         }
-    //     }
-    //     Err(e) => {
-    //         eprintln!("❌ 生成任务计划失败: {}", e);
-    //     }
-    // }
+    let value: Value = serde_json::from_str(c1).unwrap();
+    println!("{:#?}", value);
 }

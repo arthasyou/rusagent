@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use mcp_client::client::McpClient;
-use mcp_transport::client::impls::sse::SseTransport;
+use mcp_client::{client::McpClient, transport::impls::sse::SseTransport};
 use serde_json::Value;
 
 use crate::{
