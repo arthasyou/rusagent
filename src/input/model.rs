@@ -36,10 +36,11 @@ impl UserTaskInput {
 impl Default for UserTaskInput {
     fn default() -> Self {
         Self {
-            goal: "生成柱状图".to_owned(),
-            content: "苹果 5 个，香蕉 7 个，橙子 3 个".to_owned(),
-            description: Some("用于月度水果采购报告".to_owned()),
-            constraints: Some("适合投影，简洁".to_owned()),
+            goal: "语料扩充".to_owned(),
+            content: "先生成扩充大纲，再根据大纲的逐条进行扩充；大纲中每1条涉及1个知识块"
+                .to_owned(),
+            description: Some("适应于中医领域".to_owned()),
+            constraints: Some("只能在中医领域使用".to_owned()),
             references: None,
         }
     }

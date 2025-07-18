@@ -2,7 +2,6 @@ use rusagent::{
     agent::planner::Planner, input::model::UserTaskInput, models::plan::Plan,
     utils::string_util::StripCodeBlock,
 };
-use serde_json::Value;
 
 #[tokio::main]
 async fn main() {
@@ -13,7 +12,7 @@ async fn main() {
 
     // 1️⃣ 调用 planner 生成任务计划
     let plan = p.generate_plan(&user_input).await.unwrap();
-    let content = plan.first_message().unwrap();
+    let content = plan.get_content();
     println!("{:?}", content);
     let c1 = content.strip_code_block();
 

@@ -22,8 +22,14 @@ pub fn instantiate_tool() -> Vec<ToolInfo> {
             name: "generate_chart".to_string(),
             description: "Generates a chart from structured data.".to_string(),
             params_schema: json!({
-                "type": "string",
-                "data": "object"
+                "type": "object",
+                "properties": {
+                    "chart_type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "labels": { "type": "array", "items": { "type": "string" } },
+                    "values": { "type": "array", "items": { "type": "number" } }
+                },
+                "required": ["chart_type", "title", "labels", "values"]
             }),
         },
     ]

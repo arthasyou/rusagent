@@ -13,7 +13,6 @@ thiserror = "2"
 model-gateway-rs = { path = "/Users/ancient/src/rust/model-gateway-rs" }
 mcp-client = { package = "mcp-client-rust", path = "../mcp-rs/crates/mcp-client-rust" }
 
-
 [[example]]
 name = "flow"
 path = "example/flow.rs"
