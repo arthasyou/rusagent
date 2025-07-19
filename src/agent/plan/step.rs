@@ -1,30 +1,16 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Plan {
-    pub plan_id: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-
-    pub steps: Vec<Step>,
-
-    #[serde(default)]
-    pub is_succeeded: bool,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error_step_id: Option<usize>,
-}
+use crate::agent::types::StepStatus;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Step {
+pub struct AgentStep {
     pub step_id: usize,
 
     pub description: String,
+
+    #[serde(default)]
+    pub status: StepStatus,
 
     pub action: String,
 

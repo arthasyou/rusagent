@@ -10,6 +10,7 @@ reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
+uuid = { version = "1.17", features = ["v4"] }
 model-gateway-rs = { path = "/Users/ancient/src/rust/model-gateway-rs" }
 mcp-client = { package = "mcp-client-rust", path = "../mcp-rs/crates/mcp-client-rust" }
 

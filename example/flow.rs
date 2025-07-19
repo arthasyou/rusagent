@@ -1,5 +1,6 @@
 use rusagent::{
-    agent::planner::Planner, input::model::UserTaskInput, models::plan::Plan,
+    agent::{Agent, plan::AgentPlan, planner::Planner},
+    input::model::UserTaskInput,
     utils::string_util::StripCodeBlock,
 };
 
@@ -10,12 +11,16 @@ async fn main() {
 
     let p = Planner::default();
 
-    // 1️⃣ 调用 planner 生成任务计划
+    // 调用 planner 生成任务计划
     let plan = p.generate_plan(&user_input).await.unwrap();
     let content = plan.get_content();
-    println!("{:?}", content);
+    // println!("{:?}", content);
     let c1 = content.strip_code_block();
 
-    let value: Plan = serde_json::from_str(c1).unwrap();
-    println!("{:#?}", value);
+    // println!("{}", c1);
+
+    let plan: AgentPlan = serde_json::from_str(c1).unwrap();
+    let mut agent = Agent::new(plan);
+    // println!("Agent ID: {:#?}", agent.plan);
+    agent.run_loop().await.unwrap();
 }

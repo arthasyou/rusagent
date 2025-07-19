@@ -1,36 +1,59 @@
-use std::sync::Arc;
+use serde_json::json;
 
-use mcp_client::{client::McpClient, transport::impls::sse::SseTransport};
-use serde_json::Value;
-
-use crate::{
-    agent::task::{TaskPlan, TaskResult, TaskStepResult},
-    error::Result,
+use crate::agent::{
+    context::AgentContext,
+    momory::Memory,
+    plan::AgentStep,
+    types::{AgentError, StepResult},
 };
 
-pub struct Executor {
-    mcp_client: Arc<McpClient<SseTransport>>,
-}
+#[derive(Debug, Default, Clone)]
+pub struct Executor;
 
 impl Executor {
-    pub fn new(mcp_client: Arc<McpClient<SseTransport>>) -> Self {
-        Self { mcp_client }
-    }
+    pub async fn execute(
+        &self,
+        step: &AgentStep,
+        context: &AgentContext,
+        memory: &Memory,
+    ) -> Result<StepResult, AgentError> {
+        match step.action.as_str() {
+            "call_tool" => {
+                if let Some(tool_name) = &step.tool {
+                    println!("🛠️ 调用工具 [{}]，参数: {:?}", tool_name, step.parameters);
 
-    pub async fn run_plan(&self, plan: TaskPlan) -> Result<TaskResult> {
-        let mut result = TaskResult::default();
+                    // TODO: 实际调用 MCP 工具（暂时模拟）
+                    let simulated_output = json!({
+                        "result": format!("{} 工具执行成功", tool_name),
+                    });
 
-        for step in plan.steps {
-            // let output = self.mcp_client.execute(&step.tool, &step.params).await?;
-            result.steps.push(TaskStepResult {
-                tool: step.tool,
-                output: Value::Null,
-                tool_success: todo!(),
-                eval_success: todo!(),
-                reason: todo!(), // Placeholder for actual output
-            });
+                    Ok(StepResult {
+                        output: simulated_output.to_string(),
+                        success: true,
+                    })
+                } else {
+                    Err(AgentError::ExecutionError("缺少 tool 字段".to_string()))
+                }
+            }
+
+            "ask_user" => {
+                println!("🧑 等待用户回答: {:?}", step.input);
+
+                // 模拟用户交互输入
+                let fake_answer = json!({
+                    "answer": "模拟用户回答：中医基础理论",
+                });
+
+                Ok(StepResult {
+                    output: fake_answer.to_string(),
+                    success: true,
+                })
+            }
+
+            other => Err(AgentError::ExecutionError(format!(
+                "未知动作类型: {}",
+                other
+            ))),
         }
-
-        Ok(result)
     }
 }
