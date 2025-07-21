@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use serde_json::json;
 
 use crate::agent::{
@@ -14,8 +16,9 @@ impl Executor {
     pub async fn execute(
         &self,
         step: &AgentStep,
-        context: &AgentContext,
-        memory: &Memory,
+        // TODO: 添加 AgentContext 和 Memory 参数
+        _context: &AgentContext,
+        _memory: &Memory,
     ) -> Result<StepResult, AgentError> {
         match step.action.as_str() {
             "call_tool" => {
@@ -39,13 +42,27 @@ impl Executor {
             "ask_user" => {
                 println!("🧑 等待用户回答: {:?}", step.input);
 
-                // 模拟用户交互输入
-                let fake_answer = json!({
-                    "answer": "模拟用户回答：中医基础理论",
-                });
+                // 提示问题
+                if let Some(input) = &step.input {
+                    if let Some(question) = input.get("question").and_then(|v| v.as_str()) {
+                        println!("❓ {}", question);
+                    }
+                }
+
+                print!("👉 请输入你的回答：");
+                io::stdout().flush().unwrap(); // 确保立即输出提示
+
+                let mut user_input = String::new();
+                io::stdin()
+                    .read_line(&mut user_input)
+                    .map_err(|e| AgentError::ExecutionError(format!("读取用户输入失败: {}", e)))?;
+                let user_input = user_input.trim(); // 去除换行符
+
+                // 构造返回结果
+                let answer_json = json!({ "answer": user_input });
 
                 Ok(StepResult {
-                    output: fake_answer.to_string(),
+                    output: answer_json.to_string(),
                     success: true,
                 })
             }

@@ -1,5 +1,8 @@
 use rusagent::{
-    agent::{Agent, plan::AgentPlan, planner::Planner},
+    agent::{
+        Agent,
+        plan::{AgentPlan, Planner},
+    },
     input::model::UserTaskInput,
     utils::string_util::StripCodeBlock,
 };

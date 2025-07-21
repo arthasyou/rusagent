@@ -1,7 +1,6 @@
 use mcp_client::{
-    client,
     core::protocol::result::InitializeResult,
-    registry::{self, get_mcp_registry, register_mcp_clients},
+    registry::{get_mcp_registry, register_mcp_clients},
 };
 
 pub async fn init_mcp() {

@@ -1,6 +1,6 @@
 use model_gateway_rs::{
     clients::llm::LlmClient,
-    model::llm::{ChatMessage, LlmInput, LlmOutput},
+    model::llm::{LlmInput, LlmOutput},
     sdk::{ModelSDK, openai::OpenAIClient},
     traits::ModelClient,
 };
