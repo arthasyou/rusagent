@@ -2,11 +2,9 @@ use std::io::{self, Write};
 
 use serde_json::json;
 
-use crate::agent::{
-    context::AgentContext,
-    momory::Memory,
-    plan::AgentStep,
-    types::{AgentError, StepResult},
+use crate::{
+    agent::{context::AgentContext, momory::Memory, plan::AgentStep, types::StepResult},
+    error::agent_error::AgentError,
 };
 
 #[derive(Debug, Default, Clone)]

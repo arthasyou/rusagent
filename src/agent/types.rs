@@ -19,10 +19,3 @@ pub struct StepResult {
     pub output: String,
     pub success: bool,
 }
-
-#[derive(Debug)]
-pub enum AgentError {
-    ExecutionError(String),
-    VerificationError(String),
-    PlanExhausted,
-}

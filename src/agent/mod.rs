@@ -1,6 +1,7 @@
 pub mod executor;
 pub mod task;
 pub mod types;
+pub mod verifier;
 
 pub mod agent;
 pub mod context;
