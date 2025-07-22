@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::agent::plan::AgentStep;
+use crate::agent::planning::AgentStep;
 
 #[derive(Debug, Default, Clone)]
 pub struct Memory {

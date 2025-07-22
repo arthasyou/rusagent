@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use serde_json::json;
 
 use crate::{
-    agent::{context::AgentContext, momory::Memory, plan::AgentStep, types::StepResult},
+    agent::{context::AgentContext, memory::Memory, planning::AgentStep, types::StepResult},
     error::agent_error::AgentError,
 };
 

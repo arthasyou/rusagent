@@ -3,7 +3,7 @@
 use uuid::Uuid;
 
 use crate::agent::{
-    context::AgentContext, executor::Executor, momory::Memory, plan::AgentPlan, state::AgentState,
+    context::AgentContext, execution::Executor, memory::Memory, planning::AgentPlan, state::AgentState,
     types::StepStatus,
 };
 
