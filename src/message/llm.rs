@@ -16,5 +16,6 @@ impl From<UserTaskInput> for ChatMessage {
 pub fn generate_assistant_tools() -> ChatMessage {
     let tools = instantiate_tool();
     let content = build_tools_prompt(&tools);
+    println!("🤖 Assistant Tools:\n{}", content);
     ChatMessage::assistant(content.as_str())
 }

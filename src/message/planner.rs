@@ -7,9 +7,9 @@ use crate::{
 
 pub fn generate_planner_message(input: &UserTaskInput) -> Vec<ChatMessage> {
     let system_message: ChatMessage = generate_system_message();
-    let assistant_tools: ChatMessage = generate_assistant_tools();
+    let tools_message: ChatMessage = generate_assistant_tools();
     let user_message: ChatMessage = generate_user_message(input);
-    vec![system_message, assistant_tools, user_message]
+    vec![system_message, tools_message, user_message]
 }
 
 fn generate_system_message() -> ChatMessage {
@@ -17,29 +17,30 @@ fn generate_system_message() -> ChatMessage {
 You are a task planning assistant.
 Your only output should be valid JSON matching this structure.
 
-Each field meaning:
-- plan_id: Unique ID for this plan
-- description: Plan description
-- steps: A list of steps
-- step_id: Step index (1-based)
-- description: Step description
-- action: What the step does (e.g., call_tool, ask_user)
-- tool: Name of tool to call, or null if no tool needed
-- parameters: Parameters for tool as JSON, or null
-- input: Input for the step as JSON, or null
+Available actions:
+- call_tool: Call one of the available tools (see tool list in assistant message)
+- ask_user: Ask the user for input or clarification
 
-Output JSON example:
+For call_tool actions:
+- Set "tool" to the tool name (e.g., "fetch_url", "summarize_text", "generate_chart")
+- Set "parameters" to the tool parameters as JSON object
+
+For ask_user actions:
+- Set "tool" to null
+- Set "input" to contain the question: {"question": "Your question here"}
+
+Output JSON structure:
 {
   "plan_id": "string",
-  "description": "string",
+  "description": "string", 
   "steps": [
     {
       "step_id": 1,
       "description": "string",
-      "action": "string",
-      "tool": "string or null",
-      "parameters": {} or null,
-      "input": {} or null,
+      "action": "call_tool or ask_user",
+      "tool": "tool_name or null",
+      "parameters": {"param": "value"} or null,
+      "input": {"question": "text"} or null
     }
   ]
 }

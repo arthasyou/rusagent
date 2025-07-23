@@ -1949,6 +1949,7 @@ dependencies = [
  "async-trait",
  "mcp-client-rust",
  "model-gateway-rs",
+ "once_cell",
  "reqwest",
  "serde",
  "serde_json",

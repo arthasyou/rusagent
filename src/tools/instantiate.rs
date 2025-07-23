@@ -1,36 +1,30 @@
-use serde_json::json;
-
-use crate::tools::ToolInfo;
+use crate::tools::{ToolInfo, model::TOOL_REGISTRY};
 
 pub fn instantiate_tool() -> Vec<ToolInfo> {
-    vec![
-        ToolInfo {
-            name: "fetch_url".to_string(),
-            description: "Fetches content from a given URL.".to_string(),
-            params_schema: json!({
-                "url": "string"
-            }),
-        },
-        ToolInfo {
-            name: "summarize_text".to_string(),
-            description: "Summarizes provided text content.".to_string(),
-            params_schema: json!({
-                "text": "string"
-            }),
-        },
-        ToolInfo {
-            name: "generate_chart".to_string(),
-            description: "Generates a chart from structured data.".to_string(),
-            params_schema: json!({
-                "type": "object",
-                "properties": {
-                    "chart_type": { "type": "string" },
-                    "title": { "type": "string" },
-                    "labels": { "type": "array", "items": { "type": "string" } },
-                    "values": { "type": "array", "items": { "type": "number" } }
-                },
-                "required": ["chart_type", "title", "labels", "values"]
-            }),
-        },
-    ]
+    let registry = TOOL_REGISTRY.read().unwrap();
+
+    registry
+        .values()
+        .map(|tool_info| ToolInfo {
+            name: tool_info.name.clone(),
+            description: tool_info.description.clone(),
+            params_schema: tool_info.params_schema.clone(),
+            mcp_server: tool_info.mcp_server.clone(),
+        })
+        .collect()
+}
+
+pub fn get_tool_info(tool_name: &str) -> Option<ToolInfo> {
+    let registry = TOOL_REGISTRY.read().unwrap();
+    registry.get(tool_name).map(|tool_info| ToolInfo {
+        name: tool_info.name.clone(),
+        description: tool_info.description.clone(),
+        params_schema: tool_info.params_schema.clone(),
+        mcp_server: tool_info.mcp_server.clone(),
+    })
+}
+
+pub fn list_available_tools() -> Vec<String> {
+    let registry = TOOL_REGISTRY.read().unwrap();
+    registry.keys().cloned().collect()
 }

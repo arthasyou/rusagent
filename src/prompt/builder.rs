@@ -29,8 +29,8 @@ pub fn build_tools_prompt(tools: &[ToolInfo]) -> String {
         .iter()
         .map(|tool| {
             format!(
-                "\n - name: {}\n - description: {}\n - params_schema: {}",
-                tool.name, tool.description, tool.params_schema
+                "\n - name: {}\n - description: {}\n - params_schema: {} \n - mcp_server: {}",
+                tool.name, tool.description, tool.params_schema, tool.mcp_server
             )
         })
         .collect::<Vec<_>>()
