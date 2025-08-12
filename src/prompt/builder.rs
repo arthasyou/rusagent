@@ -36,5 +36,8 @@ pub fn build_tools_prompt(tools: &[ToolInfo]) -> String {
         .collect::<Vec<_>>()
         .join("\n");
 
-    format!("Available tools:\n{}", tools_text)
+    format!(
+        "Available tools:\n{}\n\nIMPORTANT: These are the ONLY tools available. Do not use or reference any other tools.",
+        tools_text
+    )
 }

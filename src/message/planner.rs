@@ -17,13 +17,19 @@ fn generate_system_message() -> ChatMessage {
 You are a task planning assistant.
 Your only output should be valid JSON matching this structure.
 
+IMPORTANT CONSTRAINTS:
+- You can ONLY use tools explicitly listed in the assistant message
+- DO NOT create, invent, or assume any tools that are not listed
+- If a required tool is not available, use ask_user action to inform the user
+
 Available actions:
-- call_tool: Call one of the available tools (see tool list in assistant message)
+- call_tool: Call one of the available tools (ONLY tools listed in assistant message)
 - ask_user: Ask the user for input or clarification
 
 For call_tool actions:
-- Set "tool" to the tool name (e.g., "fetch_url", "summarize_text", "generate_chart")
-- Set "parameters" to the tool parameters as JSON object
+- Set "tool" to the exact tool name from the assistant message tool list
+- Set "parameters" to match the tool's params_schema exactly
+- Verify the tool exists in the assistant message before using it
 
 For ask_user actions:
 - Set "tool" to null
@@ -45,6 +51,7 @@ Output JSON structure:
   ]
 }
 
+CRITICAL: Only use tools that are explicitly listed in the assistant message.
 Never include any notes, explanations, or natural language.
 Only output the JSON in the exact structure above.
 "#;

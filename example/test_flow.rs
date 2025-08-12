@@ -13,20 +13,16 @@ async fn main() {
     println!("🚀 开始测试 rusagent 完整流程...");
     init_mcp().await;
 
-    // 构造一个中医语料扩充任务，使用指定的文件 URL
+    // 构造一个中医语料扩充任务
     let user_input = UserTaskInput {
-        goal: "使用指定文件进行中医语料扩充".to_string(),
+        goal: "对中医相关文档进行语料扩充处理".to_string(),
         content: format!(
-            "请使用以下文件进行中医语料扩充任务：\n内容文件: {}\n提示文件: {}",
+            "需要处理以下两个文件进行中医语料扩充：\n- 内容文件: {}\n- 提示文件: {}",
             "https://minio.cyydm.shop/testbucket/upload/zy/ya.txt",
             "https://minio.cyydm.shop/testbucket/test/prompt.md"
         ),
-        description: Some("中医语料扩充任务 - 使用前端上传的文件URL".to_string()),
-        constraints: Some(format!(
-            "必须使用这两个文件URL进行处理：\n- content_path: {}\n- prompt_path: {}",
-            "https://minio.cyydm.shop/testbucket/upload/zy/ya.txt",
-            "https://minio.cyydm.shop/testbucket/test/prompt.md"
-        )),
+        description: Some("中医语料扩充任务".to_string()),
+        constraints: Some("需要处理指定的内容文件和提示文件".to_string()),
         references: Some(vec![
             "https://minio.cyydm.shop/testbucket/upload/zy/ya.txt".to_string(),
             "https://minio.cyydm.shop/testbucket/test/prompt.md".to_string()

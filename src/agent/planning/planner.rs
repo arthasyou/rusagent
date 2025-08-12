@@ -1,7 +1,7 @@
 use model_gateway_rs::{
     clients::llm::LlmClient,
     model::llm::{LlmInput, LlmOutput},
-    sdk::{ModelSDK, openai::OpenAIClient},
+    sdk::{ModelSDK, openai::OpenAiSdk},
     traits::ModelClient,
 };
 
@@ -37,11 +37,11 @@ where
     }
 }
 
-impl Default for Planner<OpenAIClient> {
+impl Default for Planner<OpenAiSdk> {
     fn default() -> Self {
         Self {
             llm_client: LlmClient::new(
-                OpenAIClient::new("", "http://192.168.1.64:11434/v1", "llama4:scout").unwrap(),
+                OpenAiSdk::new("", "http://192.168.1.64:11434/v1", "llama4:scout").unwrap(),
             ),
         }
     }

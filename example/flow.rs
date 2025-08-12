@@ -1,8 +1,5 @@
 use rusagent::{
-    agent::{
-        Agent,
-        plan::{AgentPlan, Planner},
-    },
+    agent::{Agent, AgentPlan, Planner},
     input::model::UserTaskInput,
     utils::string_util::StripCodeBlock,
 };
@@ -23,7 +20,7 @@ async fn main() {
     // println!("{}", c1);
 
     let plan: AgentPlan = serde_json::from_str(c1).unwrap();
-    let mut agent = Agent::new_with_mcp(plan).await;
+    let mut agent = Agent::new(plan);
     // println!("Agent ID: {:#?}", agent.plan);
     agent.run_loop().await.unwrap();
 }
