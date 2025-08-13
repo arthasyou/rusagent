@@ -35,3 +35,21 @@ pub struct AgentStep {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_reason: Option<String>,
 }
+
+impl Default for AgentStep {
+    fn default() -> Self {
+        Self {
+            step_id: 0,
+            description: String::new(),
+            status: StepStatus::default(),
+            action: String::new(),
+            tool: None,
+            parameters: None,
+            input: None,
+            output: None,
+            is_succeeded: false,
+            error_code: None,
+            error_reason: None,
+        }
+    }
+}

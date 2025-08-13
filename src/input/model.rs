@@ -1,3 +1,6 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserTaskInput {
     /// 简短的任务目标，例如 "生成柱状图"
     pub goal: String,
