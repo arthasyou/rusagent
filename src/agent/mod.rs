@@ -7,12 +7,10 @@ pub mod state;
 pub mod types;
 pub mod verification;
 
-// 单Agent导出
-pub use core::Agent;
 
-pub use context::*;
+pub use context::AgentContext;
 pub use execution::Executor;
-pub use memory::*;
+pub use memory::Memory;
 pub use planning::{AgentPlan, AgentStep, Planner};
-pub use state::*;
-pub use verification::*;
+pub use state::AgentState;
+pub use verification::verifier::Verifier;
