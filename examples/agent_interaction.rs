@@ -1,20 +1,17 @@
 use std::sync::Arc;
 
 use rusagent::{
-    agent::{
-        agents::{
-            executor_agent::ExecutorAgent, master_agent::MasterAgent, planner_agent::PlannerAgent,
-            verifier_agent::VerifierAgent,
-        },
-        multi::{
-            communication::{Message, MessageType},
-            manager::{AgentManager, AgentManagerConfig},
-        },
-        planning::AgentStep,
-        shared::{GlobalContext, global_context::GlobalConfig},
-        types::AgentCapability,
+    agent::{planning::AgentStep, types::AgentCapability},
+    agents::{
+        executor_agent::ExecutorAgent, master_agent::MasterAgent, planner_agent::PlannerAgent,
+        verifier_agent::VerifierAgent,
     },
     input::UserTaskInput,
+    multi_agent::{
+        communication::{Message, MessageType},
+        manager::{AgentManager, AgentManagerConfig},
+    },
+    shared::{GlobalContext, global_context::GlobalConfig},
 };
 use tracing::{Level, info};
 use tracing_subscriber;

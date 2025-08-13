@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod multi_agent_tests {
     use rusagent::agent::{
-        agents::{ExecutorAgent, MasterAgent},
         core::base_agent::AgentBehavior,
-        multi::{Message, MessageBus, MessageBusConfig, MessageType},
-        shared::{GlobalContext, MemoryEntry, MemoryPool},
         types::{AccessLevel, AgentCapability},
     };
+    use rusagent::agents::{ExecutorAgent, MasterAgent};
+    use rusagent::multi_agent::{Message, MessageBus, MessageBusConfig, MessageType};
+    use rusagent::shared::{GlobalContext, MemoryEntry, MemoryPool};
     use std::sync::Arc;
 
     #[tokio::test]
@@ -122,7 +122,7 @@ mod multi_agent_tests {
 
     #[tokio::test]
     async fn test_message_priority() {
-        use rusagent::agent::multi::communication::MessagePriority;
+        use rusagent::multi_agent::communication::MessagePriority;
 
         let msg1 = Message::new(
             "sender".to_string(),
@@ -145,7 +145,7 @@ mod multi_agent_tests {
 
     #[tokio::test]
     async fn test_task_queue() {
-        use rusagent::agent::multi::coordination::{Task, TaskQueue};
+        use rusagent::multi_agent::coordination::{Task, TaskQueue};
         use rusagent::agent::types::{Priority, TaskType};
 
         let queue = TaskQueue::new();

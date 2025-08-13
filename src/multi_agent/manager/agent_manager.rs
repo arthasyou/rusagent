@@ -6,13 +6,13 @@ use tracing::{debug, error, info, warn};
 
 use crate::agent::{
     core::base_agent::{AgentBehavior, AgentLifecycleState},
-    multi::{
-        communication::{MessageBus, MessageBusConfig, MessageReceiver, Message, MessageType},
-        registry::{AgentInfo, AgentRegistry, RegistryConfig},
-    },
-    shared::GlobalContext,
     types::{AgentCapability, AgentStatus, AgentType},
 };
+use crate::multi_agent::{
+    communication::{MessageBus, MessageBusConfig, MessageReceiver, Message, MessageType},
+    registry::{AgentInfo, AgentRegistry, RegistryConfig},
+};
+use crate::shared::GlobalContext;
 use crate::error::{Result, Error};
 use crate::error::agent_error::AgentError;
 
@@ -219,7 +219,7 @@ impl AgentManager {
             MessageType::Control(cmd) => {
                 // 处理控制命令
                 match cmd {
-                    crate::agent::multi::communication::message::ControlCommand::Stop => {
+                    crate::multi_agent::communication::message::ControlCommand::Stop => {
                         // 由外部处理
                     }
                     _ => {

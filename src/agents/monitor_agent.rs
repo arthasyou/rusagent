@@ -7,10 +7,10 @@ use tracing::{debug, info, warn};
 
 use crate::agent::{
     core::base_agent::{AgentBehavior, BaseAgent},
-    multi::communication::{Message, MessageType},
-    shared::GlobalContext,
     types::{AgentCapability, AgentType},
 };
+use crate::multi_agent::communication::{Message, MessageType};
+use crate::shared::GlobalContext;
 use crate::error::Result;
 
 /// 监控指标

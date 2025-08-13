@@ -5,10 +5,10 @@ use tracing::{debug, info};
 use crate::agent::{
     core::base_agent::{AgentBehavior, BaseAgent},
     execution::Executor,
-    multi::communication::{Message, MessageType},
-    shared::GlobalContext,
     types::{AgentCapability, AgentStatus, AgentType},
 };
+use crate::multi_agent::communication::{Message, MessageType};
+use crate::shared::GlobalContext;
 use crate::error::Result;
 
 /// 执行Agent，负责执行具体的任务

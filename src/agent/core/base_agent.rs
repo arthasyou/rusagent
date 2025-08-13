@@ -1,14 +1,17 @@
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::agent::{
-    context::AgentContext,
-    multi::communication::message::Message,
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    agent::{
+        context::AgentContext,
+        types::{AgentCapability, AgentType},
+    },
+    error::Result,
+    multi_agent::communication::message::Message,
     shared::GlobalContext,
-    types::{AgentCapability, AgentType},
 };
-use crate::error::Result;
 
 /// 基础Agent行为trait，所有Agent类型都必须实现这个trait
 #[async_trait]

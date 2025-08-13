@@ -5,11 +5,11 @@ use model_gateway_rs::sdk::openai::OpenAiSdk;
 
 use crate::agent::{
     core::base_agent::{AgentBehavior, BaseAgent},
-    multi::communication::{Message, MessageType},
     planning::{AgentPlan, Planner},
-    shared::GlobalContext,
     types::{AgentCapability, AgentType},
 };
+use crate::multi_agent::communication::{Message, MessageType};
+use crate::shared::GlobalContext;
 use crate::error::Result;
 use crate::input::model::UserTaskInput;
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tracing::{debug, error, info, warn};
 
-use crate::agent::multi::communication::message::{Message, MessageFilter};
+use crate::multi_agent::communication::message::{Message, MessageFilter};
 use crate::error::{Result, Error};
 use crate::error::agent_error::AgentError;
 
@@ -291,7 +291,7 @@ impl Clone for MessageBusStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agent::multi::communication::message::MessageType;
+    use crate::multi_agent::communication::message::MessageType;
 
     #[tokio::test]
     async fn test_message_bus_registration() {

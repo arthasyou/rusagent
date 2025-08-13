@@ -4,13 +4,13 @@ use tracing::{debug, info};
 
 use crate::agent::{
     core::base_agent::{AgentBehavior, BaseAgent},
-    multi::{
-        communication::{Message, MessageType},
-        coordination::task_queue::{Task, TaskQueue},
-    },
-    shared::GlobalContext,
     types::{AgentCapability, AgentType, TaskStatus},
 };
+use crate::multi_agent::{
+    communication::{Message, MessageType},
+    coordination::task_queue::{Task, TaskQueue},
+};
+use crate::shared::GlobalContext;
 use crate::error::Result;
 
 /// 主控Agent，负责任务分配和全局协调

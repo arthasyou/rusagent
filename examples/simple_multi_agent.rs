@@ -1,14 +1,14 @@
-use rusagent::agent::{
+use rusagent::{
     agents::{
         executor_agent::ExecutorAgent,
         monitor_agent::MonitorAgent,
     },
-    multi::{
+    multi_agent::{
         manager::{AgentManager, AgentManagerConfig},
         communication::{Message, MessageType},
     },
     shared::{GlobalContext, global_context::GlobalConfig},
-    types::AgentCapability,
+    agent::types::AgentCapability,
 };
 use std::sync::Arc;
 use tracing::{info, Level};

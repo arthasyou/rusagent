@@ -1,8 +1,11 @@
 pub mod agent;
+pub mod agents;
 pub mod error;
 pub mod input;
 pub mod mcp;
 pub mod message;
+pub mod multi_agent;
 pub mod prompt;
+pub mod shared;
 pub mod tools;
 pub mod utils;

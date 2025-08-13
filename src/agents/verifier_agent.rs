@@ -4,11 +4,11 @@ use tracing::{debug, info};
 
 use crate::agent::{
     core::base_agent::{AgentBehavior, BaseAgent},
-    multi::communication::{Message, MessageType},
-    shared::GlobalContext,
     types::{AgentCapability, AgentType},
     verification::Verifier,
 };
+use crate::multi_agent::communication::{Message, MessageType};
+use crate::shared::GlobalContext;
 use crate::error::Result;
 
 /// 验证Agent，负责验证任务执行结果

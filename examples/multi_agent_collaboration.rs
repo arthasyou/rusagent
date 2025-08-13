@@ -1,22 +1,20 @@
 use std::sync::Arc;
 
 use rusagent::{
-    agent::{
-        agents::{
-            executor_agent::ExecutorAgent,
-            master_agent::MasterAgent,
-            monitor_agent::{AlertCondition, AlertRule, AlertSeverity, MonitorAgent},
-            planner_agent::PlannerAgent,
-            verifier_agent::VerifierAgent,
-        },
-        multi::{
-            communication::{Message, MessageType},
-            coordination::task_queue::Task,
-            manager::{AgentManager, AgentManagerConfig},
-        },
-        shared::{GlobalContext, global_context::GlobalConfig},
-        types::{AgentCapability, Priority, TaskType},
+    agents::{
+        executor_agent::ExecutorAgent,
+        master_agent::MasterAgent,
+        monitor_agent::{AlertCondition, AlertRule, AlertSeverity, MonitorAgent},
+        planner_agent::PlannerAgent,
+        verifier_agent::VerifierAgent,
     },
+    multi_agent::{
+        communication::{Message, MessageType},
+        coordination::task_queue::Task,
+        manager::{AgentManager, AgentManagerConfig},
+    },
+    shared::{GlobalContext, global_context::GlobalConfig},
+    agent::types::{AgentCapability, Priority, TaskType},
     input::UserTaskInput,
 };
 use tracing::{Level, info};

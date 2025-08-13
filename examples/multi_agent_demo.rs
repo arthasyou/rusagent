@@ -1,4 +1,4 @@
-use rusagent::agent::{
+use rusagent::{
     agents::{
         master_agent::MasterAgent,
         planner_agent::PlannerAgent,
@@ -6,13 +6,13 @@ use rusagent::agent::{
         verifier_agent::VerifierAgent,
         monitor_agent::{MonitorAgent, AlertRule, AlertCondition, AlertSeverity},
     },
-    multi::{
+    multi_agent::{
         manager::{AgentManager, AgentManagerConfig},
         communication::{Message, MessageType},
         coordination::task_queue::Task,
     },
     shared::{GlobalContext, global_context::GlobalConfig},
-    types::{AgentCapability, Priority, TaskType},
+    agent::types::{AgentCapability, Priority, TaskType},
 };
 use std::sync::Arc;
 use tracing::{info, Level};
