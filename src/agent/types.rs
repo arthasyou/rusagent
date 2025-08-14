@@ -2,19 +2,15 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum StepStatus {
+    #[default]
     Pending,
     Executing,
     Done,
     Failed,
 }
 
-impl Default for StepStatus {
-    fn default() -> Self {
-        StepStatus::Pending
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StepResult {
@@ -22,9 +18,9 @@ pub struct StepResult {
     pub success: bool,
 }
 
-// ===== 多Agent相关类型定义 =====
+// ===== Multi-Agent related type definitions =====
 
-/// Agent生命周期状态
+/// Agent lifecycle state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AgentLifecycleState {
     Created,
@@ -36,7 +32,7 @@ pub enum AgentLifecycleState {
     Failed,
 }
 
-/// Agent类型
+/// Agent type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AgentType {
     Master,
@@ -55,12 +51,12 @@ impl fmt::Display for AgentType {
             AgentType::Executor => write!(f, "executor"),
             AgentType::Verifier => write!(f, "verifier"),
             AgentType::Monitor => write!(f, "monitor"),
-            AgentType::Custom(name) => write!(f, "{}", name),
+            AgentType::Custom(name) => write!(f, "{name}"),
         }
     }
 }
 
-/// Agent能力定义
+/// Agent capability definition
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AgentCapability {
     TaskPlanning,
@@ -68,11 +64,11 @@ pub enum AgentCapability {
     TaskVerification,
     Monitoring,
     Coordination,
-    ToolCalling(String), // 具体的工具名称
+    ToolCalling(String), // Specific tool name
     Custom(String),
 }
 
-/// 任务类型
+/// Task type
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaskType {
     Planning,
@@ -83,39 +79,31 @@ pub enum TaskType {
     Composite,
 }
 
-/// 任务优先级
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// Task priority
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
 pub enum Priority {
     Low = 0,
+    #[default]
     Normal = 1,
     High = 2,
     Critical = 3,
 }
 
-impl Default for Priority {
-    fn default() -> Self {
-        Priority::Normal
-    }
-}
 
-/// 任务状态
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Task status
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TaskStatus {
+    #[default]
     Pending,
     Assigned(String), // Agent ID
     InProgress,
     Completed,
-    Failed(String), // 失败原因
+    Failed(String), // Failure reason
     Cancelled,
 }
 
-impl Default for TaskStatus {
-    fn default() -> Self {
-        TaskStatus::Pending
-    }
-}
 
-/// Agent状态
+/// Agent status
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AgentStatus {
     Active,
@@ -125,7 +113,7 @@ pub enum AgentStatus {
     Failed,
 }
 
-/// 访问级别
+/// Access level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AccessLevel {
     Public,
@@ -133,7 +121,7 @@ pub enum AccessLevel {
     Shared,
 }
 
-/// 运行模式
+/// Runtime mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RuntimeMode {
     SingleAgent,

@@ -13,7 +13,7 @@ use crate::shared::GlobalContext;
 use crate::error::Result;
 use crate::input::model::UserTaskInput;
 
-/// 规划Agent，负责生成执行计划
+/// Planner Agent responsible for generating execution plans
 pub struct PlannerAgent {
     base: BaseAgent,
     planner: Planner<OpenAiSdk>,
@@ -30,15 +30,15 @@ impl PlannerAgent {
         }
     }
 
-    /// 处理规划请求
+    /// Handle planning request
     async fn handle_planning_request(&mut self, payload: serde_json::Value) -> Result<Message> {
         info!("PlannerAgent {} handling planning request", self.base.id);
 
-        // 解析用户输入
+        // Parse user input
         let user_input = if let Ok(input) = serde_json::from_value::<UserTaskInput>(payload.clone()) {
             input
         } else {
-            // 尝试从payload构建UserTaskInput
+            // Try to build UserTaskInput from payload
             let goal = payload.get("task")
                 .or_else(|| payload.get("goal"))
                 .and_then(|v| v.as_str())
@@ -61,13 +61,13 @@ impl PlannerAgent {
             }
         };
 
-        // 生成计划
+        // Generate plan
         match self.planner.generate_plan(&user_input).await {
             Ok(llm_output) => {
-                // 将整个LLM输出作为计划返回
-                // TODO: 实现更智能的计划解析
+                // Return the entire LLM output as plan
+                // TODO: Implement more intelligent plan parsing
                 let plan_json = serde_json::json!({
-                    "plan": format!("{:?}", llm_output), // 临时方案：将输出转为字符串
+                    "plan": format!("{:?}", llm_output), // Temporary solution: convert output to string
                     "user_input": user_input,
                 });
 
@@ -99,11 +99,11 @@ impl PlannerAgent {
         }
     }
 
-    /// 优化现有计划
+    /// Optimize existing plan
     #[allow(dead_code)]
     async fn optimize_plan(&self, plan: &AgentPlan) -> Result<AgentPlan> {
-        // TODO: 实现计划优化逻辑
-        // 例如：并行化独立步骤、合并相似步骤等
+        // TODO: Implement plan optimization logic
+        // e.g.: parallelize independent steps, merge similar steps, etc.
         Ok(plan.clone())
     }
 }
@@ -134,13 +134,12 @@ impl AgentBehavior for PlannerAgent {
 
         match &message.message_type {
             MessageType::TaskAssignment => {
-                // 如果任务是生成计划，则处理
-                if let Some(task_type) = message.payload.get("task_type").and_then(|v| v.as_str()) {
-                    if task_type == "planning" {
+                // If task is to generate plan, process it
+                if let Some(task_type) = message.payload.get("task_type").and_then(|v| v.as_str())
+                    && task_type == "planning" {
                         let response = self.handle_planning_request(message.payload).await?;
                         return Ok(Some(response));
                     }
-                }
                 Ok(None)
             }
             MessageType::Custom(msg_type) if msg_type == "PlanningRequest" => {

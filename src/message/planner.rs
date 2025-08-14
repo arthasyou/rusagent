@@ -59,6 +59,6 @@ Only output the JSON in the exact structure above.
 }
 
 fn generate_user_message(input: &UserTaskInput) -> ChatMessage {
-    let content = build_task_prompt(&input);
+    let content = build_task_prompt(input);
     ChatMessage::user(content.as_str())
 }

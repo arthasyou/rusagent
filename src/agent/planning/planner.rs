@@ -26,7 +26,7 @@ where
 
     pub async fn generate_plan(&self, input: &UserTaskInput) -> Result<LlmOutput> {
         let i = generate_planner_message(input);
-        println!("📜 生成计划消息: {:?}", i);
+        println!("📜 生成计划消息: {i:?}");
         let input = LlmInput {
             messages: i,
             max_tokens: Some(4096),

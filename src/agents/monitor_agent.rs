@@ -13,7 +13,7 @@ use crate::multi_agent::communication::{Message, MessageType};
 use crate::shared::GlobalContext;
 use crate::error::Result;
 
-/// 监控指标
+/// Monitoring metrics
 #[derive(Debug, Clone, Default)]
 pub struct Metrics {
     pub total_tasks: u64,
@@ -25,7 +25,7 @@ pub struct Metrics {
     pub error_count: u64,
 }
 
-/// 监控Agent，负责系统监控和健康检查
+/// Monitor Agent responsible for system monitoring and health checks
 pub struct MonitorAgent {
     base: BaseAgent,
     metrics: Arc<RwLock<Metrics>>,
@@ -33,7 +33,7 @@ pub struct MonitorAgent {
     monitoring_interval: std::time::Duration,
 }
 
-/// 告警规则
+/// Alert rule
 #[derive(Debug, Clone)]
 pub struct AlertRule {
     pub name: String,
@@ -41,16 +41,16 @@ pub struct AlertRule {
     pub severity: AlertSeverity,
 }
 
-/// 告警条件
+/// Alert condition
 #[derive(Debug, Clone)]
 pub enum AlertCondition {
-    ErrorRateHigh(f32),      // 错误率高于阈值
-    TaskFailureRate(f32),    // 任务失败率高于阈值
-    AgentUnhealthy(String),  // 特定Agent不健康
-    MessageBacklog(usize),   // 消息积压
+    ErrorRateHigh(f32),      // Error rate above threshold
+    TaskFailureRate(f32),    // Task failure rate above threshold
+    AgentUnhealthy(String),  // Specific Agent unhealthy
+    MessageBacklog(usize),   // Message backlog
 }
 
-/// 告警级别
+/// Alert severity
 #[derive(Debug, Clone)]
 pub enum AlertSeverity {
     Info,
@@ -71,23 +71,23 @@ impl MonitorAgent {
         }
     }
 
-    /// 添加告警规则
+    /// Add alert rule
     pub fn add_alert_rule(mut self, rule: AlertRule) -> Self {
         self.alert_rules.push(rule);
         self
     }
 
-    /// 设置监控间隔
+    /// Set monitoring interval
     pub fn with_interval(mut self, interval: std::time::Duration) -> Self {
         self.monitoring_interval = interval;
         self
     }
 
-    /// 处理状态更新
+    /// Handle status update
     async fn handle_status_update(&self, payload: serde_json::Value) -> Result<()> {
         let mut metrics = self.metrics.write().await;
 
-        // 更新任务统计
+        // Update task statistics
         if let Some(task_status) = payload.get("task_status").and_then(|v| v.as_str()) {
             match task_status {
                 "completed" => metrics.completed_tasks += 1,
@@ -97,20 +97,19 @@ impl MonitorAgent {
             metrics.total_tasks += 1;
         }
 
-        // 更新Agent健康状态
-        if let Some(agent_id) = payload.get("agent_id").and_then(|v| v.as_str()) {
-            if let Some(healthy) = payload.get("healthy").and_then(|v| v.as_bool()) {
+        // Update Agent health status
+        if let Some(agent_id) = payload.get("agent_id").and_then(|v| v.as_str())
+            && let Some(healthy) = payload.get("healthy").and_then(|v| v.as_bool()) {
                 metrics.agent_health.insert(agent_id.to_string(), healthy);
             }
-        }
 
-        // 更新消息计数
+        // Update message count
         metrics.message_count += 1;
 
         Ok(())
     }
 
-    /// 检查告警条件
+    /// Check alert conditions
     async fn check_alerts(&self) -> Vec<(AlertRule, String)> {
         let metrics = self.metrics.read().await;
         let mut triggered_alerts = Vec::new();
@@ -124,7 +123,7 @@ impl MonitorAgent {
                         0.0
                     };
                     if error_rate > *threshold {
-                        Some(format!("Error rate {} exceeds threshold {}", error_rate, threshold))
+                        Some(format!("Error rate {error_rate} exceeds threshold {threshold}"))
                     } else {
                         None
                     }
@@ -136,7 +135,7 @@ impl MonitorAgent {
                         0.0
                     };
                     if failure_rate > *threshold {
-                        Some(format!("Task failure rate {} exceeds threshold {}", failure_rate, threshold))
+                        Some(format!("Task failure rate {failure_rate} exceeds threshold {threshold}"))
                     } else {
                         None
                     }
@@ -144,7 +143,7 @@ impl MonitorAgent {
                 AlertCondition::AgentUnhealthy(agent_id) => {
                     if let Some(&healthy) = metrics.agent_health.get(agent_id) {
                         if !healthy {
-                            Some(format!("Agent {} is unhealthy", agent_id))
+                            Some(format!("Agent {agent_id} is unhealthy"))
                         } else {
                             None
                         }
@@ -153,7 +152,7 @@ impl MonitorAgent {
                     }
                 }
                 AlertCondition::MessageBacklog(_threshold) => {
-                    // TODO: 实现消息积压检查
+                    // TODO: Implement message backlog check
                     None
                 }
             };
@@ -166,7 +165,7 @@ impl MonitorAgent {
         triggered_alerts
     }
 
-    /// 发送告警
+    /// Send alert
     async fn send_alert(&self, rule: &AlertRule, message: String) -> Message {
         let severity_str = match rule.severity {
             AlertSeverity::Info => "INFO",
@@ -188,7 +187,7 @@ impl MonitorAgent {
         )
     }
 
-    /// 生成健康报告
+    /// Generate health report
     async fn generate_health_report(&self) -> serde_json::Value {
         let metrics = self.metrics.read().await;
         
@@ -277,14 +276,14 @@ impl AgentBehavior for MonitorAgent {
         loop {
             interval.tick().await;
             
-            // 检查告警
+            // Check alerts
             let alerts = self.check_alerts().await;
             for (rule, message) in alerts {
                 let _alert_msg = self.send_alert(&rule, message).await;
-                // TODO: 发送告警消息
+                // TODO: Send alert message
             }
             
-            // 定期生成健康报告
+            // Generate periodic health report
             if self.metrics.read().await.message_count % 100 == 0 {
                 let report = self.generate_health_report().await;
                 info!("Health report: {}", serde_json::to_string_pretty(&report)?);
@@ -295,7 +294,7 @@ impl AgentBehavior for MonitorAgent {
     async fn shutdown(&mut self) -> Result<()> {
         info!("MonitorAgent {} shutting down", self.base.id);
         
-        // 生成最终报告
+        // Generate final report
         let final_report = self.generate_health_report().await;
         info!("Final health report: {}", serde_json::to_string_pretty(&final_report)?);
         

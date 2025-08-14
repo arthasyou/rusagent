@@ -41,8 +41,7 @@ impl Verifier {
 
             unknown => {
                 return Err(AgentError::VerificationError(format!(
-                    "无法验证未知 action 类型: {}",
-                    unknown
+                    "无法验证未知 action 类型: {unknown}"
                 )));
             }
         }

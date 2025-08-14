@@ -1,14 +1,15 @@
+use std::{collections::HashMap, sync::Arc};
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::agent::types::AccessLevel;
-use crate::error::{Result, Error};
-use crate::error::agent_error::AgentError;
+use crate::{
+    agent::types::AccessLevel,
+    error::{Error, Result, agent_error::AgentError},
+};
 
-/// 内存条目
+/// Memory entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryEntry {
     pub key: String,
@@ -17,7 +18,7 @@ pub struct MemoryEntry {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub access_level: AccessLevel,
-    pub ttl: Option<i64>, // 生存时间（秒）
+    pub ttl: Option<i64>, // Time-to-live (seconds)
     pub metadata: serde_json::Value,
 }
 
@@ -41,19 +42,19 @@ impl MemoryEntry {
         }
     }
 
-    /// 设置TTL
+    /// Set TTL
     pub fn with_ttl(mut self, ttl_secs: i64) -> Self {
         self.ttl = Some(ttl_secs);
         self
     }
 
-    /// 设置元数据
+    /// Set metadata
     pub fn with_metadata(mut self, metadata: serde_json::Value) -> Self {
         self.metadata = metadata;
         self
     }
 
-    /// 检查是否已过期
+    /// Check if expired
     pub fn is_expired(&self) -> bool {
         if let Some(ttl) = self.ttl {
             let elapsed = Utc::now() - self.created_at;
@@ -63,43 +64,43 @@ impl MemoryEntry {
         }
     }
 
-    /// 更新值
+    /// Update value
     pub fn update(&mut self, value: serde_json::Value) {
         self.value = value;
         self.updated_at = Utc::now();
     }
 }
 
-/// 共享内存接口
+/// Shared memory interface
 #[async_trait::async_trait]
 pub trait SharedMemory: Send + Sync {
-    /// 读取内存
+    /// Read memory
     async fn get(&self, key: &str) -> Option<MemoryEntry>;
-    
-    /// 写入内存
+
+    /// Write memory
     async fn set(&self, entry: MemoryEntry) -> Result<()>;
-    
-    /// 删除内存
+
+    /// Delete memory
     async fn delete(&self, key: &str) -> Result<()>;
-    
-    /// 列出所有键
+
+    /// List all keys
     async fn list_keys(&self) -> Vec<String>;
-    
-    /// 清理过期条目
+
+    /// Clean up expired entries
     async fn cleanup_expired(&self) -> usize;
 }
 
-/// 内存池，管理Agent间的共享内存
+/// Memory pool, manages shared memory between agents
 pub struct MemoryPool {
-    /// 全局内存（所有Agent可访问）
+    /// Global memory (accessible by all agents)
     global_memory: Arc<RwLock<HashMap<String, MemoryEntry>>>,
-    /// Agent专属内存（agent_id -> memories）
+    /// Agent-specific memory (agent_id -> memories)
     agent_memory: Arc<RwLock<HashMap<String, HashMap<String, MemoryEntry>>>>,
-    /// 内存池配置
+    /// Memory pool configuration
     config: MemoryPoolConfig,
 }
 
-/// 内存池配置
+/// Memory pool configuration
 #[derive(Debug, Clone)]
 pub struct MemoryPoolConfig {
     pub max_global_entries: usize,
@@ -120,7 +121,7 @@ impl Default for MemoryPoolConfig {
 }
 
 impl MemoryPool {
-    /// 创建新的内存池
+    /// Create a new memory pool
     pub fn new(config: MemoryPoolConfig) -> Self {
         let pool = Self {
             global_memory: Arc::new(RwLock::new(HashMap::new())),
@@ -128,7 +129,7 @@ impl MemoryPool {
             config,
         };
 
-        // 启动清理任务
+        // Start cleanup task
         if pool.config.enable_ttl {
             pool.start_cleanup_task();
         }
@@ -136,17 +137,17 @@ impl MemoryPool {
         pool
     }
 
-    /// 获取全局内存
+    /// Get global memory
     pub async fn get_global(&self, key: &str) -> Option<MemoryEntry> {
         let memory = self.global_memory.read().await;
         memory.get(key).cloned().filter(|entry| !entry.is_expired())
     }
 
-    /// 设置全局内存
+    /// Set global memory
     pub async fn set_global(&self, entry: MemoryEntry) -> Result<()> {
         let mut memory = self.global_memory.write().await;
-        
-        // 检查容量限制
+
+        // Check capacity limit
         if memory.len() >= self.config.max_global_entries && !memory.contains_key(&entry.key) {
             return Err(Error::AgentError(AgentError::ResourceExhausted(
                 "Global memory pool is full".into(),
@@ -157,7 +158,7 @@ impl MemoryPool {
         Ok(())
     }
 
-    /// 获取Agent专属内存
+    /// Get agent-specific memory
     pub async fn get_agent(&self, agent_id: &str, key: &str) -> Option<MemoryEntry> {
         let agent_memories = self.agent_memory.read().await;
         agent_memories
@@ -166,31 +167,31 @@ impl MemoryPool {
             .filter(|entry| !entry.is_expired())
     }
 
-    /// 设置Agent专属内存
+    /// Set agent-specific memory
     pub async fn set_agent(&self, agent_id: &str, entry: MemoryEntry) -> Result<()> {
         let mut agent_memories = self.agent_memory.write().await;
         let memories = agent_memories
             .entry(agent_id.to_string())
             .or_insert_with(HashMap::new);
 
-        // 检查容量限制
+        // Check capacity limit
         if memories.len() >= self.config.max_agent_entries && !memories.contains_key(&entry.key) {
-            return Err(Error::AgentError(AgentError::ResourceExhausted(
-                format!("Agent {} memory is full", agent_id),
-            )));
+            return Err(Error::AgentError(AgentError::ResourceExhausted(format!(
+                "Agent {agent_id} memory is full"
+            ))));
         }
 
         memories.insert(entry.key.clone(), entry);
         Ok(())
     }
 
-    /// 删除全局内存
+    /// Delete global memory
     pub async fn delete_global(&self, key: &str) -> Result<()> {
         self.global_memory.write().await.remove(key);
         Ok(())
     }
 
-    /// 删除Agent专属内存
+    /// Delete agent-specific memory
     pub async fn delete_agent(&self, agent_id: &str, key: &str) -> Result<()> {
         if let Some(memories) = self.agent_memory.write().await.get_mut(agent_id) {
             memories.remove(key);
@@ -198,23 +199,18 @@ impl MemoryPool {
         Ok(())
     }
 
-    /// 清理Agent的所有内存
+    /// Clear all memory for an agent
     pub async fn clear_agent(&self, agent_id: &str) -> Result<()> {
         self.agent_memory.write().await.remove(agent_id);
         Ok(())
     }
 
-    /// 列出全局内存键
+    /// List global memory keys
     pub async fn list_global_keys(&self) -> Vec<String> {
-        self.global_memory
-            .read()
-            .await
-            .keys()
-            .cloned()
-            .collect()
+        self.global_memory.read().await.keys().cloned().collect()
     }
 
-    /// 列出Agent内存键
+    /// List agent memory keys
     pub async fn list_agent_keys(&self, agent_id: &str) -> Vec<String> {
         self.agent_memory
             .read()
@@ -224,11 +220,11 @@ impl MemoryPool {
             .unwrap_or_default()
     }
 
-    /// 清理过期的内存条目
+    /// Clean up expired memory entries
     pub async fn cleanup_expired(&self) -> usize {
         let mut count = 0;
 
-        // 清理全局内存
+        // Clean up global memory
         let mut global_memory = self.global_memory.write().await;
         let expired_keys: Vec<String> = global_memory
             .iter()
@@ -241,7 +237,7 @@ impl MemoryPool {
             count += 1;
         }
 
-        // 清理Agent内存
+        // Clean up agent memory
         let mut agent_memory = self.agent_memory.write().await;
         for (_, memories) in agent_memory.iter_mut() {
             let expired_keys: Vec<String> = memories
@@ -259,7 +255,7 @@ impl MemoryPool {
         count
     }
 
-    /// 启动清理任务
+    /// Start cleanup task
     fn start_cleanup_task(&self) {
         let global_memory = self.global_memory.clone();
         let agent_memory = self.agent_memory.clone();
@@ -267,16 +263,16 @@ impl MemoryPool {
 
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(interval));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 let pool = MemoryPool {
                     global_memory: global_memory.clone(),
                     agent_memory: agent_memory.clone(),
                     config: MemoryPoolConfig::default(),
                 };
-                
+
                 let cleaned = pool.cleanup_expired().await;
                 if cleaned > 0 {
                     tracing::debug!("Cleaned up {} expired memory entries", cleaned);
@@ -285,7 +281,7 @@ impl MemoryPool {
         });
     }
 
-    /// 获取统计信息
+    /// Get statistics
     pub async fn get_stats(&self) -> MemoryPoolStats {
         let global_count = self.global_memory.read().await.len();
         let agent_count: usize = self

@@ -45,19 +45,18 @@ async fn register_mcp_info() {
 
                                 tool_registry.insert(tool_name.clone(), tool_info);
                                 println!(
-                                    "Registered tool from MCP server '{}': {}",
-                                    key, tool_name
+                                    "Registered tool from MCP server '{key}': {tool_name}"
                                 );
                             }
                         }
                         Err(e) => {
-                            eprintln!("Failed to list tools from MCP server '{}': {:?}", key, e);
+                            eprintln!("Failed to list tools from MCP server '{key}': {e:?}");
                         }
                     }
                 }
             }
             Err(e) => {
-                eprintln!("Failed to initialize MCP server '{}': {:?}", key, e);
+                eprintln!("Failed to initialize MCP server '{key}': {e:?}");
             }
         }
     }

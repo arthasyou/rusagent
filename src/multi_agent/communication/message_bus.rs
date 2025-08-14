@@ -7,16 +7,16 @@ use crate::multi_agent::communication::message::{Message, MessageFilter};
 use crate::error::{Result, Error};
 use crate::error::agent_error::AgentError;
 
-/// 消息总线配置
+/// Message bus configuration
 #[derive(Debug, Clone)]
 pub struct MessageBusConfig {
-    /// 广播通道容量
+    /// Broadcast channel capacity
     pub broadcast_capacity: usize,
-    /// 点对点通道容量
+    /// Point-to-point channel capacity
     pub p2p_capacity: usize,
-    /// 消息历史记录大小
+    /// Message history size
     pub history_size: usize,
-    /// 是否启用消息持久化
+    /// Whether to enable message persistence
     pub enable_persistence: bool,
 }
 
@@ -31,21 +31,21 @@ impl Default for MessageBusConfig {
     }
 }
 
-/// 消息总线，负责Agent间的消息传递
+/// Message bus responsible for message passing between Agents
 pub struct MessageBus {
-    /// 广播发送器
+    /// Broadcast sender
     broadcast_tx: broadcast::Sender<Arc<Message>>,
-    /// 点对点通道映射（agent_id -> sender）
+    /// Point-to-point channel mapping (agent_id -> sender)
     p2p_channels: Arc<RwLock<HashMap<String, mpsc::Sender<Arc<Message>>>>>,
-    /// 消息历史记录
+    /// Message history
     message_history: Arc<RwLock<Vec<Arc<Message>>>>,
-    /// 配置
+    /// Configuration
     config: MessageBusConfig,
-    /// 统计信息
+    /// Statistics
     stats: Arc<RwLock<MessageBusStats>>,
 }
 
-/// 消息总线统计信息
+/// Message bus statistics
 #[derive(Debug, Default)]
 pub struct MessageBusStats {
     pub total_messages: u64,
@@ -56,7 +56,7 @@ pub struct MessageBusStats {
 }
 
 impl MessageBus {
-    /// 创建新的消息总线
+    /// Create a new message bus
     pub fn new(config: MessageBusConfig) -> Self {
         let (broadcast_tx, _) = broadcast::channel(config.broadcast_capacity);
 
@@ -69,14 +69,14 @@ impl MessageBus {
         }
     }
 
-    /// 注册Agent，创建其专用的接收通道
+    /// Register Agent and create its dedicated receiving channel
     pub async fn register_agent(&self, agent_id: String) -> Result<MessageReceiver> {
         let (tx, rx) = mpsc::channel(self.config.p2p_capacity);
         
-        // 注册点对点通道
+        // Register point-to-point channel
         self.p2p_channels.write().await.insert(agent_id.clone(), tx);
         
-        // 订阅广播通道
+        // Subscribe to broadcast channel
         let broadcast_rx = self.broadcast_tx.subscribe();
         
         info!("Agent {} registered to message bus", agent_id);
@@ -88,16 +88,16 @@ impl MessageBus {
         })
     }
 
-    /// 注销Agent
+    /// Unregister Agent
     pub async fn unregister_agent(&self, agent_id: &str) -> Result<()> {
         self.p2p_channels.write().await.remove(agent_id);
         info!("Agent {} unregistered from message bus", agent_id);
         Ok(())
     }
 
-    /// 发送消息
+    /// Send message
     pub async fn send(&self, message: Message) -> Result<()> {
-        // 检查消息是否已过期
+        // Check if message has expired
         if message.is_expired() {
             warn!("Attempting to send expired message: {}", message.id);
             self.stats.write().await.expired_messages += 1;
@@ -106,22 +106,22 @@ impl MessageBus {
 
         let message = Arc::new(message);
 
-        // 更新统计
+        // Update statistics
         self.stats.write().await.total_messages += 1;
 
-        // 保存到历史记录
+        // Save to history
         self.save_to_history(message.clone()).await;
 
         if message.is_broadcast() {
-            // 广播消息
+            // Broadcast message
             self.broadcast(message).await
         } else {
-            // 点对点消息
+            // Point-to-point message
             self.send_p2p(message).await
         }
     }
 
-    /// 发送广播消息
+    /// Send broadcast message
     async fn broadcast(&self, message: Arc<Message>) -> Result<()> {
         debug!("Broadcasting message: {:?}", message.id);
         self.stats.write().await.broadcast_messages += 1;
@@ -138,7 +138,7 @@ impl MessageBus {
         }
     }
 
-    /// 发送点对点消息
+    /// Send point-to-point message
     async fn send_p2p(&self, message: Arc<Message>) -> Result<()> {
         let receiver_id = message
             .receiver_id
@@ -157,8 +157,7 @@ impl MessageBus {
                     error!("Failed to send message to {}", receiver_id_string);
                     self.stats.write().await.failed_deliveries += 1;
                     Err(Error::AgentError(AgentError::MessageDeliveryError(format!(
-                        "Failed to send to {}",
-                        receiver_id_string
+                        "Failed to send to {receiver_id_string}"
                     ))))
                 }
             }
@@ -166,17 +165,16 @@ impl MessageBus {
             warn!("Agent {} not found", receiver_id_string);
             self.stats.write().await.failed_deliveries += 1;
             Err(Error::AgentError(AgentError::MessageDeliveryError(format!(
-                "Agent {} not found",
-                receiver_id_string
+                "Agent {receiver_id_string} not found"
             ))))
         }
     }
 
-    /// 保存消息到历史记录
+    /// Save message to history
     async fn save_to_history(&self, message: Arc<Message>) {
         let mut history = self.message_history.write().await;
         
-        // 限制历史记录大小
+        // Limit history size
         if history.len() >= self.config.history_size {
             history.remove(0);
         }
@@ -184,7 +182,7 @@ impl MessageBus {
         history.push(message);
     }
 
-    /// 获取消息历史
+    /// Get message history
     pub async fn get_history(&self, filter: Option<MessageFilter>) -> Vec<Arc<Message>> {
         let history = self.message_history.read().await;
         
@@ -199,44 +197,44 @@ impl MessageBus {
         }
     }
 
-    /// 获取统计信息
+    /// Get statistics
     pub async fn get_stats(&self) -> MessageBusStats {
         self.stats.read().await.clone()
     }
 
-    /// 获取已注册的Agent列表
+    /// Get list of registered Agents
     pub async fn get_registered_agents(&self) -> Vec<String> {
         self.p2p_channels.read().await.keys().cloned().collect()
     }
 }
 
-/// 消息接收器，每个Agent持有一个
+/// Message receiver, each Agent holds one
 pub struct MessageReceiver {
     /// Agent ID
     pub agent_id: String,
-    /// 点对点消息接收器
+    /// Point-to-point message receiver
     p2p_rx: mpsc::Receiver<Arc<Message>>,
-    /// 广播消息接收器
+    /// Broadcast message receiver
     broadcast_rx: broadcast::Receiver<Arc<Message>>,
 }
 
 impl MessageReceiver {
-    /// 接收下一条消息（优先处理点对点消息）
+    /// Receive next message (prioritize point-to-point messages)
     pub async fn recv(&mut self) -> Option<Arc<Message>> {
         tokio::select! {
-            // 优先接收点对点消息
+            // Prioritize point-to-point messages
             Some(msg) = self.p2p_rx.recv() => {
                 debug!("Agent {} received P2P message: {:?}", self.agent_id, msg.id);
                 Some(msg)
             }
-            // 然后接收广播消息
+            // Then receive broadcast messages
             Ok(msg) = self.broadcast_rx.recv() => {
-                // 过滤掉自己发送的广播消息
+                // Filter out broadcast messages sent by self
                 if msg.sender_id != self.agent_id {
                     debug!("Agent {} received broadcast message: {:?}", self.agent_id, msg.id);
                     Some(msg)
                 } else {
-                    // 递归调用继续接收下一条消息
+                    // Recursively call to continue receiving next message
                     Box::pin(self.recv()).await
                 }
             }
@@ -244,31 +242,30 @@ impl MessageReceiver {
         }
     }
 
-    /// 尝试接收消息（非阻塞）
+    /// Try to receive message (non-blocking)
     pub fn try_recv(&mut self) -> Option<Arc<Message>> {
-        // 首先尝试接收点对点消息
+        // First try to receive point-to-point message
         if let Ok(msg) = self.p2p_rx.try_recv() {
             return Some(msg);
         }
 
-        // 然后尝试接收广播消息
-        if let Ok(msg) = self.broadcast_rx.try_recv() {
-            if msg.sender_id != self.agent_id {
+        // Then try to receive broadcast message
+        if let Ok(msg) = self.broadcast_rx.try_recv()
+            && msg.sender_id != self.agent_id {
                 return Some(msg);
             }
-        }
 
         None
     }
 
-    /// 接收消息（带过滤器）
+    /// Receive message (with filter)
     pub async fn recv_filtered(&mut self, filter: MessageFilter) -> Option<Arc<Message>> {
         loop {
             if let Some(msg) = self.recv().await {
                 if filter.matches(&msg) {
                     return Some(msg);
                 }
-                // 不匹配则继续接收
+                // Continue receiving if not matched
             } else {
                 return None;
             }

@@ -11,7 +11,7 @@ use crate::multi_agent::communication::{Message, MessageType};
 use crate::shared::GlobalContext;
 use crate::error::Result;
 
-/// 验证Agent，负责验证任务执行结果
+/// Verifier Agent responsible for verifying task execution results
 pub struct VerifierAgent {
     base: BaseAgent,
     verifier: Verifier,
@@ -25,24 +25,24 @@ impl VerifierAgent {
 
         Self {
             base: BaseAgent::new(id, AgentType::Verifier, capabilities),
-            verifier: Verifier::default(),
+            verifier: Verifier,
             verification_rules: serde_json::json!({}),
         }
     }
 
-    /// 设置验证规则
+    /// Set verification rules
     pub fn with_rules(mut self, rules: serde_json::Value) -> Self {
         self.verification_rules = rules;
         self
     }
 
-    /// 处理验证请求
+    /// Handle verification request
     async fn handle_verification_request(&mut self, message: Message) -> Result<Message> {
         info!("VerifierAgent {} handling verification request", self.base.id);
 
         let payload = &message.payload;
         
-        // 提取需要验证的内容
+        // Extract content to verify
         let task_id = payload.get("task_id")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
@@ -53,9 +53,9 @@ impl VerifierAgent {
         
         let step = payload.get("step");
 
-        // 执行验证
+        // Execute verification
         let verification_result = if let Some(step_value) = step {
-            // 如果有步骤信息，使用现有的验证器
+            // If there's step information, use existing verifier
             if let Ok(agent_step) = serde_json::from_value::<crate::agent::planning::AgentStep>(step_value.clone()) {
                 if let Ok(step_result) = serde_json::from_value::<crate::agent::types::StepResult>(result.clone()) {
                     match self.verifier.verify(
@@ -80,15 +80,14 @@ impl VerifierAgent {
                     })
                 }
             } else {
-                // 通用验证逻辑
+                // Generic verification logic
                 self.verify_with_rules(&result).await
             }
         } else {
-            // 通用验证逻辑
             self.verify_with_rules(&result).await
         };
 
-        // 返回验证结果
+        // Return verification result
         Ok(Message::new(
             self.base.id.clone(),
             message.sender_id.clone().into(),
@@ -101,12 +100,12 @@ impl VerifierAgent {
         ))
     }
 
-    /// 使用自定义规则验证
+    /// Verify using custom rules
     async fn verify_with_rules(&self, result: &serde_json::Value) -> serde_json::Value {
-        // TODO: 实现基于规则的验证逻辑
-        // 这里可以根据verification_rules进行验证
+        // TODO: Implement rule-based verification logic
+        // Can perform verification based on verification_rules here
         
-        // 简单的验证示例
+        // Simple verification example
         if result.is_null() || (result.is_object() && result.as_object().unwrap().is_empty()) {
             serde_json::json!({
                 "valid": false,
@@ -147,13 +146,12 @@ impl AgentBehavior for VerifierAgent {
 
         match &message.message_type {
             MessageType::TaskAssignment => {
-                // 如果任务是验证，则处理
-                if let Some(task_type) = message.payload.get("task_type").and_then(|v| v.as_str()) {
-                    if task_type == "verification" {
+                // If task is verification, process it
+                if let Some(task_type) = message.payload.get("task_type").and_then(|v| v.as_str())
+                    && task_type == "verification" {
                         let response = self.handle_verification_request(message).await?;
                         return Ok(Some(response));
                     }
-                }
                 Ok(None)
             }
             MessageType::Custom(msg_type) if msg_type == "VerificationRequest" => {

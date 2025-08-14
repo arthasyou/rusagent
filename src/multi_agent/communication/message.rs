@@ -2,30 +2,30 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// 消息类型
+/// Message type
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MessageType {
-    /// 任务分配
+    /// Task assignment
     TaskAssignment,
-    /// 状态更新
+    /// Status update
     StatusUpdate,
-    /// 结果通知
+    /// Result notification
     ResultNotification,
-    /// 资源请求
+    /// Resource request
     ResourceRequest,
-    /// 资源响应
+    /// Resource response
     ResourceResponse,
-    /// 心跳
+    /// Heartbeat
     Heartbeat,
-    /// 错误报告
+    /// Error report
     Error,
-    /// 控制命令
+    /// Control command
     Control(ControlCommand),
-    /// 自定义消息
+    /// Custom message
     Custom(String),
 }
 
-/// 控制命令类型
+/// Control command type
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ControlCommand {
     Start,
@@ -35,46 +35,42 @@ pub enum ControlCommand {
     Shutdown,
 }
 
-/// 消息优先级
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+/// Message priority
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub enum MessagePriority {
     Low = 0,
+    #[default]
     Normal = 1,
     High = 2,
     Urgent = 3,
 }
 
-impl Default for MessagePriority {
-    fn default() -> Self {
-        MessagePriority::Normal
-    }
-}
 
-/// 消息结构体
+/// Message struct
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
-    /// 消息ID
+    /// Message ID
     pub id: String,
-    /// 发送者ID
+    /// Sender ID
     pub sender_id: String,
-    /// 接收者ID（None表示广播）
+    /// Receiver ID (None means broadcast)
     pub receiver_id: Option<String>,
-    /// 消息类型
+    /// Message type
     pub message_type: MessageType,
-    /// 消息优先级
+    /// Message priority
     pub priority: MessagePriority,
-    /// 消息内容
+    /// Message content
     pub payload: serde_json::Value,
-    /// 时间戳
+    /// Timestamp
     pub timestamp: DateTime<Utc>,
-    /// 相关ID（用于关联请求和响应）
+    /// Correlation ID (for associating requests and responses)
     pub correlation_id: Option<String>,
-    /// 消息过期时间
+    /// Message expiration time
     pub expires_at: Option<DateTime<Utc>>,
 }
 
 impl Message {
-    /// 创建新消息
+    /// Create new message
     pub fn new(
         sender_id: String,
         receiver_id: Option<String>,
@@ -94,7 +90,7 @@ impl Message {
         }
     }
 
-    /// 创建广播消息
+    /// Create broadcast message
     pub fn broadcast(
         sender_id: String,
         message_type: MessageType,
@@ -103,7 +99,7 @@ impl Message {
         Self::new(sender_id, None, message_type, payload)
     }
 
-    /// 创建响应消息
+    /// Create response message
     pub fn response(
         sender_id: String,
         receiver_id: String,
@@ -116,19 +112,19 @@ impl Message {
         msg
     }
 
-    /// 设置优先级
+    /// Set priority
     pub fn with_priority(mut self, priority: MessagePriority) -> Self {
         self.priority = priority;
         self
     }
 
-    /// 设置过期时间
+    /// Set expiration time
     pub fn with_expiry(mut self, expires_at: DateTime<Utc>) -> Self {
         self.expires_at = Some(expires_at);
         self
     }
 
-    /// 检查消息是否已过期
+    /// Check if message has expired
     pub fn is_expired(&self) -> bool {
         if let Some(expires_at) = self.expires_at {
             Utc::now() > expires_at
@@ -137,14 +133,14 @@ impl Message {
         }
     }
 
-    /// 是否是广播消息
+    /// Check if broadcast message
     pub fn is_broadcast(&self) -> bool {
         self.receiver_id.is_none()
     }
 }
 
-/// 消息过滤器
-#[derive(Debug, Clone)]
+/// Message filter
+#[derive(Debug, Clone, Default)]
 pub struct MessageFilter {
     pub sender_id: Option<String>,
     pub message_types: Option<Vec<MessageType>>,
@@ -176,26 +172,23 @@ impl MessageFilter {
     }
 
     pub fn matches(&self, message: &Message) -> bool {
-        // 检查发送者
-        if let Some(ref sender) = self.sender_id {
-            if &message.sender_id != sender {
+        // Check sender
+        if let Some(ref sender) = self.sender_id
+            && &message.sender_id != sender {
                 return false;
             }
-        }
 
-        // 检查消息类型
-        if let Some(ref types) = self.message_types {
-            if !types.contains(&message.message_type) {
+        // Check message type
+        if let Some(ref types) = self.message_types
+            && !types.contains(&message.message_type) {
                 return false;
             }
-        }
 
-        // 检查优先级
-        if let Some(min_priority) = self.min_priority {
-            if message.priority < min_priority {
+        // Check priority
+        if let Some(min_priority) = self.min_priority
+            && message.priority < min_priority {
                 return false;
             }
-        }
 
         true
     }

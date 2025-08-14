@@ -98,6 +98,12 @@ pub struct TaskQueue {
     dependencies: Arc<RwLock<HashMap<String, Vec<String>>>>,
 }
 
+impl Default for TaskQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskQueue {
     pub fn new() -> Self {
         let mut pending = HashMap::new();
@@ -148,7 +154,7 @@ impl TaskQueue {
                 // 查找可执行的任务（依赖已满足）
                 let mut index = None;
                 for (i, task) in queue.iter().enumerate() {
-                    if self.are_dependencies_satisfied(&task, &in_progress, &completed).await {
+                    if self.are_dependencies_satisfied(task, &in_progress, &completed).await {
                         index = Some(i);
                         break;
                     }
@@ -168,7 +174,7 @@ impl TaskQueue {
         &self,
         task: &Task,
         in_progress: &HashMap<String, Task>,
-        completed: &Vec<Task>,
+        completed: &[Task],
     ) -> bool {
         if task.dependencies.is_empty() {
             return true;

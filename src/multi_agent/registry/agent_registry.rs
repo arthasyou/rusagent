@@ -8,7 +8,7 @@ use crate::agent::types::{AgentCapability, AgentStatus, AgentType};
 use crate::error::{Result, Error};
 use crate::error::agent_error::AgentError;
 
-/// Agent信息
+/// Agent information
 #[derive(Debug, Clone)]
 pub struct AgentInfo {
     pub id: String,
@@ -31,23 +31,18 @@ impl AgentInfo {
         }
     }
 
-    /// 更新心跳时间
     pub fn update_heartbeat(&mut self) {
         self.last_heartbeat = Utc::now();
     }
 
-    /// 检查是否存活（基于心跳）
     pub fn is_alive(&self, timeout: Duration) -> bool {
         Utc::now() - self.last_heartbeat < timeout
     }
 }
 
-/// Agent注册表配置
 #[derive(Debug, Clone)]
 pub struct RegistryConfig {
-    /// 心跳超时时间（秒）
     pub heartbeat_timeout_secs: i64,
-    /// 清理间隔（秒）
     pub cleanup_interval_secs: u64,
 }
 
@@ -60,20 +55,14 @@ impl Default for RegistryConfig {
     }
 }
 
-/// Agent注册表，管理所有Agent的注册信息
 pub struct AgentRegistry {
-    /// Agent信息映射（agent_id -> AgentInfo）
     agents: Arc<RwLock<HashMap<String, AgentInfo>>>,
-    /// 能力索引（capability -> agent_ids）
     capability_index: Arc<RwLock<HashMap<AgentCapability, Vec<String>>>>,
-    /// 类型索引（agent_type -> agent_ids）
     type_index: Arc<RwLock<HashMap<AgentType, Vec<String>>>>,
-    /// 配置
     config: RegistryConfig,
 }
 
 impl AgentRegistry {
-    /// 创建新的Agent注册表
     pub fn new(config: RegistryConfig) -> Self {
         Self {
             agents: Arc::new(RwLock::new(HashMap::new())),
@@ -83,16 +72,13 @@ impl AgentRegistry {
         }
     }
 
-    /// 注册Agent
     pub async fn register(&self, info: AgentInfo) -> Result<()> {
         let agent_id = info.id.clone();
         let agent_type = info.agent_type;
         let capabilities = info.capabilities.clone();
 
-        // 注册基本信息
         self.agents.write().await.insert(agent_id.clone(), info);
 
-        // 更新能力索引
         let mut cap_index = self.capability_index.write().await;
         for capability in capabilities {
             cap_index
@@ -101,7 +87,6 @@ impl AgentRegistry {
                 .push(agent_id.clone());
         }
 
-        // 更新类型索引
         self.type_index
             .write()
             .await
@@ -113,9 +98,7 @@ impl AgentRegistry {
         Ok(())
     }
 
-    /// 注销Agent
     pub async fn unregister(&self, agent_id: &str) -> Result<()> {
-        // 获取Agent信息
         let info = self
             .agents
             .write()
@@ -123,7 +106,6 @@ impl AgentRegistry {
             .remove(agent_id)
             .ok_or_else(|| Error::AgentError(AgentError::AgentNotFound(agent_id.to_string())))?;
 
-        // 从能力索引中移除
         let mut cap_index = self.capability_index.write().await;
         for capability in &info.capabilities {
             if let Some(agents) = cap_index.get_mut(capability) {
@@ -134,7 +116,6 @@ impl AgentRegistry {
             }
         }
 
-        // 从类型索引中移除
         let mut type_index = self.type_index.write().await;
         if let Some(agents) = type_index.get_mut(&info.agent_type) {
             agents.retain(|id| id != agent_id);
@@ -147,7 +128,6 @@ impl AgentRegistry {
         Ok(())
     }
 
-    /// 更新Agent状态
     pub async fn update_status(&self, agent_id: &str, status: AgentStatus) -> Result<()> {
         let mut agents = self.agents.write().await;
         let agent = agents
@@ -158,7 +138,6 @@ impl AgentRegistry {
         Ok(())
     }
 
-    /// 更新心跳
     pub async fn heartbeat(&self, agent_id: &str) -> Result<()> {
         let mut agents = self.agents.write().await;
         let agent = agents
@@ -169,17 +148,14 @@ impl AgentRegistry {
         Ok(())
     }
 
-    /// 获取Agent信息
     pub async fn get_agent(&self, agent_id: &str) -> Option<AgentInfo> {
         self.agents.read().await.get(agent_id).cloned()
     }
 
-    /// 获取所有Agent
     pub async fn get_all_agents(&self) -> Vec<AgentInfo> {
         self.agents.read().await.values().cloned().collect()
     }
 
-    /// 根据类型查找Agent
     pub async fn find_by_type(&self, agent_type: AgentType) -> Vec<AgentInfo> {
         let type_index = self.type_index.read().await;
         let agents = self.agents.read().await;
@@ -194,7 +170,6 @@ impl AgentRegistry {
         }
     }
 
-    /// 根据能力查找Agent
     pub async fn find_by_capability(&self, capability: &AgentCapability) -> Vec<AgentInfo> {
         let cap_index = self.capability_index.read().await;
         let agents = self.agents.read().await;
@@ -209,7 +184,6 @@ impl AgentRegistry {
         }
     }
 
-    /// 查找存活的Agent
     pub async fn find_alive_agents(&self) -> Vec<AgentInfo> {
         let timeout = Duration::seconds(self.config.heartbeat_timeout_secs);
         self.agents
@@ -221,7 +195,6 @@ impl AgentRegistry {
             .collect()
     }
 
-    /// 查找空闲的Agent
     pub async fn find_idle_agents(&self) -> Vec<AgentInfo> {
         self.agents
             .read()
@@ -232,7 +205,6 @@ impl AgentRegistry {
             .collect()
     }
 
-    /// 清理死亡的Agent
     pub async fn cleanup_dead_agents(&self) -> Vec<String> {
         let timeout = Duration::seconds(self.config.heartbeat_timeout_secs);
         let agents = self.agents.read().await;
@@ -253,7 +225,6 @@ impl AgentRegistry {
         dead_agents
     }
 
-    /// 获取统计信息
     pub async fn get_stats(&self) -> RegistryStats {
         let agents = self.agents.read().await;
         let timeout = Duration::seconds(self.config.heartbeat_timeout_secs);
@@ -277,7 +248,6 @@ impl AgentRegistry {
         }
     }
 
-    /// 启动清理任务
     pub fn start_cleanup_task(self: Arc<Self>) {
         let interval = self.config.cleanup_interval_secs;
         
@@ -295,7 +265,6 @@ impl AgentRegistry {
     }
 }
 
-/// 注册表统计信息
 #[derive(Debug)]
 pub struct RegistryStats {
     pub total_agents: usize,

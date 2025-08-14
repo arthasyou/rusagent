@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::agent::types::StepStatus;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AgentStep {
     pub step_id: usize,
 
@@ -36,20 +36,3 @@ pub struct AgentStep {
     pub error_reason: Option<String>,
 }
 
-impl Default for AgentStep {
-    fn default() -> Self {
-        Self {
-            step_id: 0,
-            description: String::new(),
-            status: StepStatus::default(),
-            action: String::new(),
-            tool: None,
-            parameters: None,
-            input: None,
-            output: None,
-            is_succeeded: false,
-            error_code: None,
-            error_reason: None,
-        }
-    }
-}

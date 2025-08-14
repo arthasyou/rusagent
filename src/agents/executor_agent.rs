@@ -11,7 +11,7 @@ use crate::multi_agent::communication::{Message, MessageType};
 use crate::shared::GlobalContext;
 use crate::error::Result;
 
-/// 执行Agent，负责执行具体的任务
+/// Executor Agent responsible for executing specific tasks
 pub struct ExecutorAgent {
     base: BaseAgent,
     executor: Executor,
@@ -23,32 +23,32 @@ impl ExecutorAgent {
     pub fn new(id: Option<String>, capabilities: Vec<AgentCapability>) -> Self {
         let id = id.unwrap_or_else(|| BaseAgent::generate_id(&AgentType::Executor));
         
-        // 添加基本的执行能力
+        // Add basic execution capabilities
         let mut all_capabilities = vec![AgentCapability::TaskExecution];
         all_capabilities.extend(capabilities);
 
         Self {
             base: BaseAgent::new(id, AgentType::Executor, all_capabilities.clone()),
-            executor: Executor::default(),
+            executor: Executor,
             current_task: None,
             capabilities: all_capabilities,
         }
     }
 
-    /// 创建一个可以调用特定工具的ExecutorAgent
+    /// Create an ExecutorAgent that can call specific tools
     pub fn with_tool_capability(id: Option<String>, tool_name: String) -> Self {
         Self::new(id, vec![AgentCapability::ToolCalling(tool_name)])
     }
 
-    /// 执行任务
+    /// Execute task
     async fn execute_task(&mut self, task: serde_json::Value) -> Result<serde_json::Value> {
         info!("ExecutorAgent {} executing task", self.base.id);
         
-        // 从任务中提取步骤信息
+        // Extract step information from task
         if let Some(step) = task.get("step") {
-            // 构造AgentStep对象
+            // Construct AgentStep object
             if let Ok(agent_step) = serde_json::from_value::<crate::agent::planning::AgentStep>(step.clone()) {
-                // 使用现有的Executor执行
+                // Execute using existing Executor
                 let result = self.executor.execute(
                     &agent_step,
                     &self.base.local_context,
@@ -66,7 +66,7 @@ impl ExecutorAgent {
                 )))
             }
         } else {
-            // 简单任务执行逻辑
+            // Simple task execution logic
             Ok(serde_json::json!({
                 "result": "Task executed successfully",
                 "executor_id": self.base.id,
@@ -74,14 +74,14 @@ impl ExecutorAgent {
         }
     }
 
-    /// 处理任务分配
+    /// Handle task assignment
     async fn handle_task_assignment(&mut self, message: Message) -> Result<Message> {
         let task = message.payload;
         
-        // 更新状态为忙碌
+        // Update status to busy
         self.current_task = Some(task.clone());
         
-        // 发送状态更新
+        // Send status update
         let _status_update = Message::new(
             self.base.id.clone(),
             message.sender_id.clone().into(),
@@ -93,12 +93,12 @@ impl ExecutorAgent {
             }),
         );
 
-        // 执行任务
+        // Execute task
         match self.execute_task(task.clone()).await {
             Ok(result) => {
                 self.current_task = None;
                 
-                // 返回执行结果
+                // Return execution result
                 Ok(Message::new(
                     self.base.id.clone(),
                     message.sender_id.clone().into(),
@@ -113,7 +113,7 @@ impl ExecutorAgent {
             Err(e) => {
                 self.current_task = None;
                 
-                // 返回错误
+                // Return error
                 Ok(Message::new(
                     self.base.id.clone(),
                     message.sender_id.clone().into(),
@@ -159,7 +159,7 @@ impl AgentBehavior for ExecutorAgent {
                 Ok(Some(response))
             }
             MessageType::Control(cmd) => {
-                // 处理控制命令
+                // Handle control command
                 debug!("ExecutorAgent received control command: {:?}", cmd);
                 Ok(None)
             }
@@ -173,7 +173,7 @@ impl AgentBehavior for ExecutorAgent {
     async fn shutdown(&mut self) -> Result<()> {
         info!("ExecutorAgent {} shutting down", self.base.id);
         
-        // 如果有正在执行的任务，记录下来
+        // If there's a task being executed, record it
         if let Some(task) = &self.current_task {
             info!("ExecutorAgent {} was executing task: {:?}", self.base.id, task);
         }
@@ -182,7 +182,7 @@ impl AgentBehavior for ExecutorAgent {
     }
 
     fn is_healthy(&self) -> bool {
-        // 可以添加更复杂的健康检查逻辑
+        // Can add more complex health check logic
         true
     }
 

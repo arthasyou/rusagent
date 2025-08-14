@@ -15,7 +15,7 @@ mod multi_agent_tests {
         let bus = MessageBus::new(MessageBusConfig::default());
 
         // 注册两个Agent
-        let mut receiver1 = bus.register_agent("agent1".to_string()).await.unwrap();
+        let _receiver1 = bus.register_agent("agent1".to_string()).await.unwrap();
         let mut receiver2 = bus.register_agent("agent2".to_string()).await.unwrap();
 
         // Agent1发送消息给Agent2

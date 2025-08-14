@@ -13,7 +13,7 @@ use crate::multi_agent::{
 use crate::shared::GlobalContext;
 use crate::error::Result;
 
-/// 主控Agent，负责任务分配和全局协调
+/// Master Agent responsible for task distribution and global coordination
 pub struct MasterAgent {
     base: BaseAgent,
     task_queue: Arc<TaskQueue>,
@@ -35,14 +35,14 @@ impl MasterAgent {
         }
     }
 
-    /// 分解任务
+    /// Decompose tasks
     async fn decompose_task(&self, task: &Task) -> Result<Vec<Task>> {
-        // TODO: 实现智能任务分解逻辑
-        // 这里简单地返回原任务
+        // TODO: Implement intelligent task decomposition logic
+        // Simply return the original task here
         Ok(vec![task.clone()])
     }
 
-    /// 分配任务给合适的Agent
+    /// Assign task to suitable Agent
     #[allow(dead_code)]
     async fn assign_task(&mut self, task: &mut Task, agent_id: String) -> Result<()> {
         task.assigned_to = Some(agent_id.clone());
@@ -52,21 +52,21 @@ impl MasterAgent {
         Ok(())
     }
 
-    /// 处理任务分配请求
+    /// Handle task assignment request
     async fn handle_task_assignment(&mut self, payload: serde_json::Value) -> Result<Message> {
-        // 从payload解析任务
+        // Parse task from payload
         let task: Task = serde_json::from_value(payload.clone())
             .map_err(|e| crate::error::agent_error::AgentError::ParseError(e.to_string()))?;
 
-        // 添加到任务队列
+        // Add to task queue
         self.task_queue.enqueue(task.clone()).await?;
         
-        // 分解任务
+        // Decompose task
         let subtasks = self.decompose_task(&task).await?;
         
-        // TODO: 查找合适的执行者并分配任务
+        // TODO: Find suitable executor and assign task
         
-        // 返回确认消息
+        // Return confirmation message
         Ok(Message::new(
             self.base.id.clone(),
             Some(task.created_by.clone()),
@@ -79,21 +79,20 @@ impl MasterAgent {
         ))
     }
 
-    /// 处理状态更新
+    /// Handle status update
     async fn handle_status_update(&mut self, payload: serde_json::Value) -> Result<Option<Message>> {
-        if let Some(task_id) = payload.get("task_id").and_then(|v| v.as_str()) {
-            if let Some(status) = payload.get("status") {
-                // 更新任务状态
+        if let Some(task_id) = payload.get("task_id").and_then(|v| v.as_str())
+            && let Some(status) = payload.get("status") {
+                // Update task status
                 if let Ok(task_status) = serde_json::from_value::<TaskStatus>(status.clone()) {
                     info!("Task {} status updated to {:?}", task_id, task_status);
                     
-                    // 如果任务完成，从活动任务中移除
+                    // If task completed, remove from active tasks
                     if matches!(task_status, TaskStatus::Completed | TaskStatus::Failed(_)) {
                         self.active_tasks.remove(task_id);
                     }
                 }
             }
-        }
         Ok(None)
     }
 }
@@ -130,7 +129,7 @@ impl AgentBehavior for MasterAgent {
                 self.handle_status_update(message.payload).await
             }
             MessageType::ResourceRequest => {
-                // TODO: 处理资源请求
+                // TODO: Handle resource request
                 Ok(None)
             }
             _ => {
@@ -143,21 +142,21 @@ impl AgentBehavior for MasterAgent {
     async fn run(&mut self) -> Result<()> {
         info!("MasterAgent {} starting main loop", self.base.id);
         
-        // 主循环：处理任务队列
+        // Main loop: process task queue
         loop {
-            // 检查是否有待分配的任务
+            // Check if there are tasks pending assignment
             if let Some(task) = self.task_queue.dequeue().await {
                 info!("Processing task: {}", task.id);
                 
-                // TODO: 实现智能任务分配逻辑
-                // 1. 查找合适的Agent
-                // 2. 发送任务分配消息
-                // 3. 跟踪任务状态
+                // TODO: Implement intelligent task assignment logic
+                // 1. Find suitable Agent
+                // 2. Send task assignment message
+                // 3. Track task status
                 
                 self.active_tasks.insert(task.id.clone(), task);
             }
             
-            // 避免忙等待
+            // Avoid busy waiting
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         }
     }
@@ -165,11 +164,11 @@ impl AgentBehavior for MasterAgent {
     async fn shutdown(&mut self) -> Result<()> {
         info!("MasterAgent {} shutting down", self.base.id);
         
-        // 保存未完成的任务
+        // Save pending tasks
         let pending_tasks = self.task_queue.get_all_pending().await;
         if !pending_tasks.is_empty() {
             info!("Saving {} pending tasks", pending_tasks.len());
-            // TODO: 持久化未完成的任务
+            // TODO: Persist unfinished tasks
         }
         
         Ok(())

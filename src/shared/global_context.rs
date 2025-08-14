@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::agent::types::RuntimeMode;
 
-/// 全局配置
+/// Global configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GlobalConfig {
     pub runtime_mode: RuntimeMode,
@@ -26,7 +26,7 @@ impl Default for GlobalConfig {
     }
 }
 
-/// 运行时信息
+/// Runtime information
 #[derive(Debug, Clone)]
 pub struct RuntimeInfo {
     pub start_time: chrono::DateTime<chrono::Utc>,
@@ -44,21 +44,21 @@ impl Default for RuntimeInfo {
     }
 }
 
-/// 全局上下文，所有Agent共享的信息
+/// Global context shared by all Agents
 #[derive(Clone, Debug)]
 pub struct GlobalContext {
-    /// 全局配置
+    /// Global configuration
     pub config: Arc<RwLock<GlobalConfig>>,
-    /// 运行时信息
+    /// Runtime information
     pub runtime_info: Arc<RuntimeInfo>,
-    /// 共享数据存储
+    /// Shared data storage
     pub shared_data: Arc<RwLock<serde_json::Value>>,
-    /// MCP工具注册表引用（如果需要）
+    /// MCP tool registry reference (if needed)
     pub tool_registry: Option<Arc<RwLock<std::collections::HashMap<String, serde_json::Value>>>>,
 }
 
 impl GlobalContext {
-    /// 创建新的全局上下文
+    /// Create new global context
     pub fn new(config: GlobalConfig) -> Self {
         Self {
             config: Arc::new(RwLock::new(config)),
@@ -68,38 +68,38 @@ impl GlobalContext {
         }
     }
 
-    /// 获取配置的只读引用
+    /// Get read-only reference to configuration
     pub async fn get_config(&self) -> GlobalConfig {
         self.config.read().await.clone()
     }
 
-    /// 更新配置
+    /// Update configuration
     pub async fn update_config<F>(&self, updater: F)
     where
         F: FnOnce(&mut GlobalConfig),
     {
         let mut config = self.config.write().await;
-        updater(&mut *config);
+        updater(&mut config);
     }
 
-    /// 获取共享数据
+    /// Get shared data
     pub async fn get_shared_data(&self, key: &str) -> Option<serde_json::Value> {
         self.shared_data.read().await.get(key).cloned()
     }
 
-    /// 设置共享数据
+    /// Set shared data
     pub async fn set_shared_data(&self, key: String, value: serde_json::Value) {
         if let Some(obj) = self.shared_data.write().await.as_object_mut() {
             obj.insert(key, value);
         }
     }
 
-    /// 获取运行模式
+    /// Get runtime mode
     pub async fn get_runtime_mode(&self) -> RuntimeMode {
         self.config.read().await.runtime_mode
     }
 
-    /// 是否是多Agent模式
+    /// Check if multi-agent mode
     pub async fn is_multi_agent_mode(&self) -> bool {
         matches!(self.get_runtime_mode().await, RuntimeMode::MultiAgent)
     }

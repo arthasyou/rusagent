@@ -19,7 +19,7 @@ use crate::{
     shared::GlobalContext,
 };
 
-/// Agent管理器配置
+/// Agent manager configuration
 #[derive(Debug, Clone)]
 pub struct AgentManagerConfig {
     pub message_bus_config: MessageBusConfig,
@@ -39,7 +39,7 @@ impl Default for AgentManagerConfig {
     }
 }
 
-/// Agent运行时信息
+/// Agent runtime information
 struct AgentRuntime {
     task_handle: Option<JoinHandle<()>>,
     shutdown_tx: Option<oneshot::Sender<()>>,
@@ -48,29 +48,29 @@ struct AgentRuntime {
     agent_type: AgentType,
 }
 
-/// Agent管理器，负责Agent的生命周期管理
+/// Agent manager responsible for Agent lifecycle management
 pub struct AgentManager {
-    /// Agent运行时映射
+    /// Agent runtime mapping
     agents: Arc<RwLock<HashMap<String, AgentRuntime>>>,
-    /// 消息总线
+    /// Message bus
     message_bus: Arc<MessageBus>,
-    /// Agent注册表
+    /// Agent registry
     registry: Arc<AgentRegistry>,
-    /// 全局上下文
+    /// Global context
     context: Arc<GlobalContext>,
-    /// 配置
+    /// Configuration
     config: AgentManagerConfig,
-    /// 管理器状态
+    /// Manager state
     running: Arc<RwLock<bool>>,
 }
 
 impl AgentManager {
-    /// 创建新的Agent管理器
+    /// Create new Agent manager
     pub fn new(context: Arc<GlobalContext>, config: AgentManagerConfig) -> Self {
         let message_bus = Arc::new(MessageBus::new(config.message_bus_config.clone()));
         let registry = Arc::new(AgentRegistry::new(config.registry_config.clone()));
 
-        // 启动注册表清理任务
+        // Start registry cleanup task
         registry.clone().start_cleanup_task();
 
         Self {
@@ -83,33 +83,33 @@ impl AgentManager {
         }
     }
 
-    /// 启动Agent
+    /// Start Agent
     pub async fn spawn_agent(&self, mut agent: Box<dyn AgentBehavior>) -> Result<String> {
         let agent_id = agent.get_id().to_string();
         let agent_type = agent.get_type();
         let capabilities = agent.get_capabilities().to_vec();
 
-        // 检查Agent数量限制
+        // Check Agent quantity limit
         if self.agents.read().await.len() >= self.config.max_agents {
             return Err(Error::AgentError(AgentError::ResourceExhausted(
                 "Maximum agent limit reached".into(),
             )));
         }
 
-        // 初始化Agent
+        // Initialize Agent
         agent.initialize(self.context.clone()).await?;
 
-        // 注册到消息总线
+        // Register to message bus
         let message_receiver = self.message_bus.register_agent(agent_id.clone()).await?;
 
-        // 注册到注册表
+        // Register to registry
         let agent_info = AgentInfo::new(agent_id.clone(), agent_type, capabilities);
         self.registry.register(agent_info).await?;
 
-        // 创建关闭通道
+        // Create shutdown channel
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
-        // 启动Agent任务
+        // Start Agent task
         let agent_id_clone = agent_id.clone();
         let message_bus = self.message_bus.clone();
         let registry = self.registry.clone();
@@ -126,9 +126,9 @@ impl AgentManager {
             .await;
         });
 
-        // 保存运行时信息
-        // 注意：agent已经被移动到task中，这里我们创建一个占位符
-        // 实际的agent逻辑在task中运行
+        // Save runtime information
+        // Note: agent has been moved to task, we create a placeholder here
+        // Actual agent logic runs in the task
         let runtime = AgentRuntime {
             task_handle: Some(task_handle),
             shutdown_tx: Some(shutdown_tx),
@@ -143,7 +143,7 @@ impl AgentManager {
         Ok(agent_id)
     }
 
-    /// Agent主循环
+    /// Agent main loop
     async fn agent_loop(
         mut agent: Box<dyn AgentBehavior>,
         agent_id: String,
@@ -154,16 +154,16 @@ impl AgentManager {
     ) {
         info!("Agent {} started", agent_id);
 
-        // 启动心跳任务
+        // Start heartbeat task
         let heartbeat_handle = Self::start_heartbeat_task(agent_id.clone(), registry.clone());
 
-        // 将Agent分成两部分：一个用于运行，一个用于消息处理
+        // Split Agent into two parts: one for running, one for message processing
         let agent_id_for_run = agent_id.clone();
 
-        // 创建一个channel来协调agent.run()的执行
+        // Create a channel to coordinate agent.run() execution
         let (run_tx, run_rx) = tokio::sync::oneshot::channel::<()>();
 
-        // 启动一个任务来运行agent.run()
+        // Start a task to run agent.run()
         tokio::spawn(async move {
             tokio::select! {
                 result = agent.run() => {
@@ -172,7 +172,7 @@ impl AgentManager {
                     }
                 }
                 _ = run_rx => {
-                    // 收到停止信号，执行关闭逻辑
+                    // Received stop signal, execute shutdown logic
                     if let Err(e) = agent.shutdown().await {
                         error!("Agent {} shutdown error: {:?}", agent_id_for_run, e);
                     }
@@ -180,16 +180,16 @@ impl AgentManager {
             }
         });
 
-        // 消息处理循环
+        // Message processing loop
         loop {
             tokio::select! {
-                // 接收消息
+                // Receive message
                 Some(msg) = message_receiver.recv() => {
-                    // 由于agent已经被移动，我们只能记录日志
+                    // Since agent has been moved, we can only log
                     debug!("Agent {} received message: {:?}", agent_id, msg.message_type);
-                    // TODO: 考虑使用消息转发机制而不是直接处理
+                    // TODO: Consider using message forwarding mechanism instead of direct processing
                 }
-                // 关闭信号
+                // Shutdown signal
                 _ = &mut shutdown_rx => {
                     info!("Agent {} received shutdown signal", agent_id);
                     break;
@@ -197,14 +197,14 @@ impl AgentManager {
             }
         }
 
-        // 清理工作
+        // Cleanup work
         heartbeat_handle.abort();
-        let _ = run_tx.send(()); // 通知agent任务停止
+        let _ = run_tx.send(()); // Notify agent task to stop
 
         info!("Agent {} stopped", agent_id);
     }
 
-    /// 处理Agent消息
+    /// Process Agent messages
     #[allow(dead_code)]
     async fn handle_agent_message(
         agent: &mut Box<dyn AgentBehavior>,
@@ -214,10 +214,10 @@ impl AgentManager {
     ) -> Result<()> {
         match &message.message_type {
             MessageType::Control(cmd) => {
-                // 处理控制命令
+                // Process control command
                 match cmd {
                     crate::multi_agent::communication::message::ControlCommand::Stop => {
-                        // 由外部处理
+                        // Handled externally
                     }
                     _ => {
                         warn!("Unhandled control command: {:?}", cmd);
@@ -225,15 +225,14 @@ impl AgentManager {
                 }
             }
             MessageType::StatusUpdate => {
-                // 更新Agent状态
-                if let Some(status) = message.payload.get("status") {
-                    if let Ok(status) = serde_json::from_value::<AgentStatus>(status.clone()) {
+                // Update Agent status
+                if let Some(status) = message.payload.get("status")
+                    && let Ok(status) = serde_json::from_value::<AgentStatus>(status.clone()) {
                         registry.update_status(agent.get_id(), status).await?;
                     }
-                }
             }
             _ => {
-                // 让Agent处理其他消息
+                // Let Agent process other messages
                 if let Some(response) = agent.process_message(message).await? {
                     message_bus.send(response).await?;
                 }
@@ -243,7 +242,7 @@ impl AgentManager {
         Ok(())
     }
 
-    /// 启动心跳任务
+    /// Start heartbeat task
     fn start_heartbeat_task(agent_id: String, registry: Arc<AgentRegistry>) -> JoinHandle<()> {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
@@ -258,25 +257,25 @@ impl AgentManager {
         })
     }
 
-    /// 终止Agent
+    /// Terminate Agent
     pub async fn terminate_agent(&self, agent_id: &str) -> Result<()> {
         let mut agents = self.agents.write().await;
 
         if let Some(mut runtime) = agents.remove(agent_id) {
-            // 发送关闭信号
+            // Send shutdown signal
             if let Some(tx) = runtime.shutdown_tx.take() {
                 let _ = tx.send(());
             }
 
-            // 等待任务结束
+            // Wait for task to finish
             if let Some(handle) = runtime.task_handle.take() {
                 let _ = tokio::time::timeout(std::time::Duration::from_secs(10), handle).await;
             }
 
-            // 从注册表中移除
+            // Remove from registry
             self.registry.unregister(agent_id).await?;
 
-            // 从消息总线中移除
+            // Remove from message bus
             self.message_bus.unregister_agent(agent_id).await?;
 
             info!("Agent {} terminated", agent_id);
@@ -288,7 +287,7 @@ impl AgentManager {
         }
     }
 
-    /// 获取Agent状态
+    /// Get Agent status
     pub async fn get_agent_status(&self, agent_id: &str) -> Result<serde_json::Value> {
         let agents = self.agents.read().await;
 
@@ -305,7 +304,7 @@ impl AgentManager {
         }
     }
 
-    /// 获取所有Agent的状态
+    /// Get status of all Agents
     pub async fn get_all_agent_status(&self) -> Vec<serde_json::Value> {
         self.agents
             .read()
@@ -321,32 +320,32 @@ impl AgentManager {
             .collect()
     }
 
-    /// 发送消息给特定Agent
+    /// Send message to specific Agent
     pub async fn send_message(&self, message: Message) -> Result<()> {
         self.message_bus.send(message).await
     }
 
-    /// 广播消息给所有Agent
+    /// Broadcast message to all Agents
     pub async fn broadcast_message(&self, message: Message) -> Result<()> {
         self.message_bus.send(message).await
     }
 
-    /// 根据能力查找Agent
+    /// Find Agent by capability
     pub async fn find_agents_by_capability(&self, capability: &AgentCapability) -> Vec<AgentInfo> {
         self.registry.find_by_capability(capability).await
     }
 
-    /// 根据类型查找Agent
+    /// Find Agent by type
     pub async fn find_agents_by_type(&self, agent_type: AgentType) -> Vec<AgentInfo> {
         self.registry.find_by_type(agent_type).await
     }
 
-    /// 获取空闲的Agent
+    /// Get idle Agents
     pub async fn find_idle_agents(&self) -> Vec<AgentInfo> {
         self.registry.find_idle_agents().await
     }
 
-    /// 关闭所有Agent
+    /// Shutdown all Agents
     pub async fn shutdown_all(&self) -> Result<()> {
         *self.running.write().await = false;
 
@@ -362,7 +361,7 @@ impl AgentManager {
         Ok(())
     }
 
-    /// 获取管理器统计信息
+    /// Get manager statistics
     pub async fn get_stats(&self) -> ManagerStats {
         let registry_stats = self.registry.get_stats().await;
         let message_stats = self.message_bus.get_stats().await;
@@ -378,7 +377,7 @@ impl AgentManager {
     }
 }
 
-/// 管理器统计信息
+/// Manager statistics
 #[derive(Debug)]
 pub struct ManagerStats {
     pub total_agents: usize,

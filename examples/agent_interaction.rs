@@ -14,7 +14,6 @@ use rusagent::{
     shared::{GlobalContext, global_context::GlobalConfig},
 };
 use tracing::{Level, info};
-use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

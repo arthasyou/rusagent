@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     agent::{
@@ -13,38 +12,38 @@ use crate::{
     shared::GlobalContext,
 };
 
-/// 基础Agent行为trait，所有Agent类型都必须实现这个trait
+/// Base Agent behavior trait that all Agent types must implement
 #[async_trait]
 pub trait AgentBehavior: Send + Sync {
-    /// 获取Agent的唯一标识符
+    /// Get the unique identifier of the Agent
     fn get_id(&self) -> &str;
 
-    /// 获取Agent的类型
+    /// Get the type of the Agent
     fn get_type(&self) -> AgentType;
 
-    /// 获取Agent的能力列表
+    /// Get the list of Agent capabilities
     fn get_capabilities(&self) -> &[AgentCapability];
 
-    /// 初始化Agent
+    /// Initialize the Agent
     async fn initialize(&mut self, context: Arc<GlobalContext>) -> Result<()>;
 
-    /// 处理接收到的消息
+    /// Process received messages
     async fn process_message(&mut self, message: Message) -> Result<Option<Message>>;
 
-    /// 执行Agent的主循环（如果有的话）
+    /// Execute the Agent's main loop (if any)
     async fn run(&mut self) -> Result<()> {
         Ok(())
     }
 
-    /// 优雅地关闭Agent
+    /// Gracefully shut down the Agent
     async fn shutdown(&mut self) -> Result<()>;
 
-    /// 获取Agent的健康状态
+    /// Get the health status of the Agent
     fn is_healthy(&self) -> bool {
         true
     }
 
-    /// 获取Agent的状态快照（用于监控和调试）
+    /// Get a status snapshot of the Agent (for monitoring and debugging)
     fn get_status(&self) -> serde_json::Value {
         serde_json::json!({
             "id": self.get_id(),
@@ -54,7 +53,7 @@ pub trait AgentBehavior: Send + Sync {
     }
 }
 
-/// 基础Agent结构体，提供通用功能
+/// Base Agent struct providing common functionality
 #[derive(Debug, Clone)]
 pub struct BaseAgent {
     pub id: String,
@@ -75,7 +74,7 @@ impl BaseAgent {
         }
     }
 
-    /// 生成新的Agent ID
+    /// Generate a new Agent ID
     pub fn generate_id(agent_type: &AgentType) -> String {
         format!("{}-{}", agent_type, uuid::Uuid::new_v4().simple())
     }
