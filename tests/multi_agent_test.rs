@@ -1,13 +1,16 @@
 #[cfg(test)]
 mod multi_agent_tests {
-    use rusagent::agent::{
-        core::base_agent::AgentBehavior,
-        types::{AccessLevel, AgentCapability},
-    };
-    use rusagent::agents::{ExecutorAgent, MasterAgent};
-    use rusagent::multi_agent::{Message, MessageBus, MessageBusConfig, MessageType};
-    use rusagent::shared::{GlobalContext, MemoryEntry, MemoryPool};
     use std::sync::Arc;
+
+    use rusagent::{
+        agent::{
+            core::base_agent::AgentBehavior,
+            types::{AccessLevel, AgentCapability},
+        },
+        agents::{ExecutorAgent, MasterAgent},
+        multi_agent::{Message, MessageBus, MessageBusConfig, MessageType},
+        shared::{GlobalContext, MemoryEntry, MemoryPool},
+    };
 
     #[tokio::test]
     async fn test_message_bus_communication() {
@@ -97,12 +100,12 @@ mod multi_agent_tests {
     #[tokio::test]
     async fn test_agent_initialization() {
         let context = Arc::new(GlobalContext::default());
-        
+
         // 创建MasterAgent
         let mut master = MasterAgent::new(Some("test-master".to_string()));
         assert_eq!(master.get_id(), "test-master");
         assert_eq!(master.get_type(), rusagent::agent::types::AgentType::Master);
-        
+
         // 初始化
         master.initialize(context.clone()).await.unwrap();
         assert!(master.is_healthy());
@@ -112,9 +115,9 @@ mod multi_agent_tests {
             Some("test-executor".to_string()),
             vec![AgentCapability::ToolCalling("test_tool".to_string())],
         );
-        
+
         executor.initialize(context).await.unwrap();
-        
+
         let capabilities = executor.get_capabilities();
         assert!(capabilities.contains(&AgentCapability::TaskExecution));
         assert!(capabilities.contains(&AgentCapability::ToolCalling("test_tool".to_string())));
@@ -145,8 +148,10 @@ mod multi_agent_tests {
 
     #[tokio::test]
     async fn test_task_queue() {
-        use rusagent::multi_agent::coordination::{Task, TaskQueue};
-        use rusagent::agent::types::{Priority, TaskType};
+        use rusagent::{
+            agent::types::{Priority, TaskType},
+            multi_agent::coordination::{Task, TaskQueue},
+        };
 
         let queue = TaskQueue::new();
 
