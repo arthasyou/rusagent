@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StepStatus {
@@ -22,6 +23,18 @@ pub struct StepResult {
 }
 
 // ===== 多Agent相关类型定义 =====
+
+/// Agent生命周期状态
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AgentLifecycleState {
+    Created,
+    Initializing,
+    Running,
+    Paused,
+    Stopping,
+    Stopped,
+    Failed,
+}
 
 /// Agent类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

@@ -80,39 +80,3 @@ impl BaseAgent {
         format!("{}-{}", agent_type, uuid::Uuid::new_v4().simple())
     }
 }
-
-/// Agent生命周期状态
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum AgentLifecycleState {
-    Created,
-    Initializing,
-    Running,
-    Paused,
-    Stopping,
-    Stopped,
-    Failed,
-}
-
-/// Agent健康状态
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentHealth {
-    pub state: AgentLifecycleState,
-    pub last_heartbeat: chrono::DateTime<chrono::Utc>,
-    pub cpu_usage: f32,
-    pub memory_usage: u64,
-    pub message_queue_size: usize,
-    pub error_count: u32,
-}
-
-impl Default for AgentHealth {
-    fn default() -> Self {
-        Self {
-            state: AgentLifecycleState::Created,
-            last_heartbeat: chrono::Utc::now(),
-            cpu_usage: 0.0,
-            memory_usage: 0,
-            message_queue_size: 0,
-            error_count: 0,
-        }
-    }
-}

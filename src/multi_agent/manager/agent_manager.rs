@@ -1,20 +1,23 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::{RwLock, oneshot};
-use tokio::task::JoinHandle;
+use std::{collections::HashMap, sync::Arc};
+
+use tokio::{
+    sync::{RwLock, oneshot},
+    task::JoinHandle,
+};
 use tracing::{debug, error, info, warn};
 
-use crate::agent::{
-    core::base_agent::{AgentBehavior, AgentLifecycleState},
-    types::{AgentCapability, AgentStatus, AgentType},
+use crate::{
+    agent::{
+        core::base_agent::AgentBehavior,
+        types::{AgentCapability, AgentLifecycleState, AgentStatus, AgentType},
+    },
+    error::{Error, Result, agent_error::AgentError},
+    multi_agent::{
+        communication::{Message, MessageBus, MessageBusConfig, MessageReceiver, MessageType},
+        registry::{AgentInfo, AgentRegistry, RegistryConfig},
+    },
+    shared::GlobalContext,
 };
-use crate::multi_agent::{
-    communication::{MessageBus, MessageBusConfig, MessageReceiver, Message, MessageType},
-    registry::{AgentInfo, AgentRegistry, RegistryConfig},
-};
-use crate::shared::GlobalContext;
-use crate::error::{Result, Error};
-use crate::error::agent_error::AgentError;
 
 /// Agent管理器配置
 #[derive(Debug, Clone)]
@@ -81,10 +84,7 @@ impl AgentManager {
     }
 
     /// 启动Agent
-    pub async fn spawn_agent(
-        &self,
-        mut agent: Box<dyn AgentBehavior>,
-    ) -> Result<String> {
+    pub async fn spawn_agent(&self, mut agent: Box<dyn AgentBehavior>) -> Result<String> {
         let agent_id = agent.get_id().to_string();
         let agent_type = agent.get_type();
         let capabilities = agent.get_capabilities().to_vec();
@@ -113,7 +113,7 @@ impl AgentManager {
         let agent_id_clone = agent_id.clone();
         let message_bus = self.message_bus.clone();
         let registry = self.registry.clone();
-        
+
         let task_handle = tokio::spawn(async move {
             Self::agent_loop(
                 agent,
@@ -155,17 +155,14 @@ impl AgentManager {
         info!("Agent {} started", agent_id);
 
         // 启动心跳任务
-        let heartbeat_handle = Self::start_heartbeat_task(
-            agent_id.clone(),
-            registry.clone(),
-        );
+        let heartbeat_handle = Self::start_heartbeat_task(agent_id.clone(), registry.clone());
 
         // 将Agent分成两部分：一个用于运行，一个用于消息处理
         let agent_id_for_run = agent_id.clone();
-        
+
         // 创建一个channel来协调agent.run()的执行
         let (run_tx, run_rx) = tokio::sync::oneshot::channel::<()>();
-        
+
         // 启动一个任务来运行agent.run()
         tokio::spawn(async move {
             tokio::select! {
@@ -247,13 +244,10 @@ impl AgentManager {
     }
 
     /// 启动心跳任务
-    fn start_heartbeat_task(
-        agent_id: String,
-        registry: Arc<AgentRegistry>,
-    ) -> JoinHandle<()> {
+    fn start_heartbeat_task(agent_id: String, registry: Arc<AgentRegistry>) -> JoinHandle<()> {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
-            
+
             loop {
                 interval.tick().await;
                 if let Err(e) = registry.heartbeat(&agent_id).await {
@@ -267,7 +261,7 @@ impl AgentManager {
     /// 终止Agent
     pub async fn terminate_agent(&self, agent_id: &str) -> Result<()> {
         let mut agents = self.agents.write().await;
-        
+
         if let Some(mut runtime) = agents.remove(agent_id) {
             // 发送关闭信号
             if let Some(tx) = runtime.shutdown_tx.take() {
@@ -276,29 +270,28 @@ impl AgentManager {
 
             // 等待任务结束
             if let Some(handle) = runtime.task_handle.take() {
-                let _ = tokio::time::timeout(
-                    std::time::Duration::from_secs(10),
-                    handle,
-                ).await;
+                let _ = tokio::time::timeout(std::time::Duration::from_secs(10), handle).await;
             }
 
             // 从注册表中移除
             self.registry.unregister(agent_id).await?;
-            
+
             // 从消息总线中移除
             self.message_bus.unregister_agent(agent_id).await?;
 
             info!("Agent {} terminated", agent_id);
             Ok(())
         } else {
-            Err(Error::AgentError(AgentError::AgentNotFound(agent_id.to_string())))
+            Err(Error::AgentError(AgentError::AgentNotFound(
+                agent_id.to_string(),
+            )))
         }
     }
 
     /// 获取Agent状态
     pub async fn get_agent_status(&self, agent_id: &str) -> Result<serde_json::Value> {
         let agents = self.agents.read().await;
-        
+
         if let Some(runtime) = agents.get(agent_id) {
             Ok(serde_json::json!({
                 "id": runtime.agent_id,
@@ -306,7 +299,9 @@ impl AgentManager {
                 "state": runtime.state,
             }))
         } else {
-            Err(Error::AgentError(AgentError::AgentNotFound(agent_id.to_string())))
+            Err(Error::AgentError(AgentError::AgentNotFound(
+                agent_id.to_string(),
+            )))
         }
     }
 
@@ -316,11 +311,13 @@ impl AgentManager {
             .read()
             .await
             .values()
-            .map(|runtime| serde_json::json!({
-                "id": runtime.agent_id,
-                "type": runtime.agent_type,
-                "state": runtime.state,
-            }))
+            .map(|runtime| {
+                serde_json::json!({
+                    "id": runtime.agent_id,
+                    "type": runtime.agent_type,
+                    "state": runtime.state,
+                })
+            })
             .collect()
     }
 
@@ -335,10 +332,7 @@ impl AgentManager {
     }
 
     /// 根据能力查找Agent
-    pub async fn find_agents_by_capability(
-        &self,
-        capability: &AgentCapability,
-    ) -> Vec<AgentInfo> {
+    pub async fn find_agents_by_capability(&self, capability: &AgentCapability) -> Vec<AgentInfo> {
         self.registry.find_by_capability(capability).await
     }
 
@@ -357,7 +351,7 @@ impl AgentManager {
         *self.running.write().await = false;
 
         let agent_ids: Vec<String> = self.agents.read().await.keys().cloned().collect();
-        
+
         for agent_id in agent_ids {
             if let Err(e) = self.terminate_agent(&agent_id).await {
                 error!("Failed to terminate agent {}: {:?}", agent_id, e);

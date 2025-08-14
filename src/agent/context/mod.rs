@@ -2,7 +2,6 @@ use std::{collections::HashMap, path::PathBuf};
 
 use serde_json::Value;
 
-#[derive(Clone)]
 /// Represents the context for an agent task, containing all relevant information and configuration.
 ///
 /// # Fields
@@ -20,8 +19,7 @@ use serde_json::Value;
 /// - `trace_id`: Optional trace identifier for tracking the execution flow.
 /// - `timestamp`: Optional start time in UNIX milliseconds, used for TTL or timeout control.
 /// - `metadata`: Custom key-value data for use by special tools or plugins.
-
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct AgentContext {
     pub user_prompt: Option<String>,
     pub available_tools: Vec<String>,
